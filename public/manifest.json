@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Tabloom — Smart Tab Organizer",
+  "description": "Privately classify, preview, and group your open tabs.",
+  "version": "0.1.0",
+  "permissions": ["tabs", "tabGroups", "storage"],
+  "action": {
+    "default_title": "Organize tabs with Tabloom",
+    "default_popup": "index.html"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  }
+}
