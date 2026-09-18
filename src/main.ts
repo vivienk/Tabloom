@@ -57,7 +57,7 @@ function render(): void {
   const filterHtml = ["All", ...usedCategories].map((category) => {
     const count = category === "All" ? tabs.length : tabs.filter((tab) => tab.category === category).length;
     return `<button class="filter ${activeFilter === category ? "active" : ""}" data-filter="${category}">${category}<span>${count}</span></button>`;
-  }).join("") + `<button class="filter add-filter" id="add-category">+ Add category</button>`;
+  }).join("");
   const addCategoryHtml = addingCategory ? `<form class="category-form" id="category-form">
     <input id="category-name" maxlength="28" placeholder="Category name" autocomplete="off" autofocus>
     <button class="mini-primary" type="submit">Add</button>
@@ -82,7 +82,7 @@ function render(): void {
       <div><strong>${duplicates}</strong><span>duplicate sets</span></div>
       <div class="privacy"><span>●</span> Local analysis</div>
     </section>
-    <nav>${filterHtml}</nav>
+    <div class="category-bar"><nav>${filterHtml}</nav><button class="filter add-filter" id="add-category">+ Add category</button></div>
     ${addCategoryHtml}
     <section class="inventory-head"><div><h2>Preview</h2><p>Choose what gets organized. Nothing will be closed.</p></div><button id="select-suggested" class="text-button">Select suggested</button></section>
     <section class="tab-list">${listHtml || `<div class="no-results">No tabs in this category.</div>`}</section>

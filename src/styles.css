@@ -18,12 +18,13 @@ h1 { margin: 10px 0 18px; font: 500 31px/1.02 Georgia, "Times New Roman", serif;
 .summary span { color: #b8c9c2; font-size: 11px; margin-top: 2px; }
 .summary .privacy { align-items: center; justify-content: center; flex-direction: row; gap: 7px; font-size: 12px; color: #d8e4df; }
 .summary .privacy span { color: #7fc99d; margin: 0; font-size: 15px; }
-nav { display: flex; gap: 7px; margin: 17px 0 15px; overflow-x: auto; padding-bottom: 2px; }
+.category-bar { display: flex; align-items: center; gap: 8px; margin: 17px 0 15px; }
+nav { min-width: 0; flex: 1; display: flex; gap: 7px; overflow-x: auto; padding-bottom: 2px; }
 .filter { border: 1px solid #d9ddd5; background: #fafbf7; border-radius: 20px; color: #67716d; padding: 7px 11px; font-size: 11px; white-space: nowrap; }
 .filter span { display: inline-grid; place-items: center; margin-left: 6px; min-width: 17px; height: 17px; padding: 0 4px; background: #e9ece5; border-radius: 9px; font-size: 9px; }
 .filter.active { background: #173f35; border-color: #173f35; color: white; }
 .filter.active span { background: #ffffff20; }
-.add-filter { border-style: dashed; color: #286351; font-weight: 700; }
+.add-filter { flex: none; border-style: dashed; color: #286351; font-weight: 700; }
 .category-form { display: flex; align-items: center; gap: 7px; margin: -5px 0 12px; padding: 9px; border: 1px solid #d9ddd5; border-radius: 12px; background: #fbfcf8; }
 .category-form input { flex: 1; min-width: 0; border: 1px solid #cfd5cc; background: white; border-radius: 8px; padding: 8px 10px; color: #17201d; font-size: 11px; outline: none; }
 .category-form input:focus { border-color: #4b806f; box-shadow: 0 0 0 3px #4b806f18; }
