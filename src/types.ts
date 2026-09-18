@@ -1,5 +1,5 @@
 export const CATEGORIES = ["Work", "Research", "Learning", "Shopping", "Social", "Personal", "Inbox"] as const;
-export type Category = (typeof CATEGORIES)[number];
+export type Category = string;
 
 export type TabInput = {
   id: number;
