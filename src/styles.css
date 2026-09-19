@@ -24,6 +24,12 @@ nav { min-width: 0; flex: 1; display: flex; gap: 7px; overflow-x: auto; padding-
 .filter span { display: inline-grid; place-items: center; margin-left: 6px; min-width: 17px; height: 17px; padding: 0 4px; background: #e9ece5; border-radius: 9px; font-size: 9px; }
 .filter.active { background: #173f35; border-color: #173f35; color: white; }
 .filter.active span { background: #ffffff20; }
+.custom-filter { position: relative; flex: none; }
+.custom-filter .filter { padding-right: 26px; }
+.remove-filter { position: absolute; top: 50%; right: 6px; width: 18px; height: 18px; display: grid; place-items: center; transform: translateY(-50%); border: 0; border-radius: 50%; background: transparent; color: #77817c; font-size: 14px; line-height: 1; }
+.remove-filter:hover, .remove-filter:focus-visible { background: #dfe4dc; color: #8a3f35; outline: none; }
+.custom-filter:has(.filter.active) .remove-filter { color: #dce8e3; }
+.custom-filter:has(.filter.active) .remove-filter:hover, .custom-filter:has(.filter.active) .remove-filter:focus-visible { background: #ffffff20; color: white; }
 .add-filter { flex: none; border-style: dashed; color: #286351; font-weight: 700; }
 .category-form { display: flex; align-items: center; gap: 10px; margin: -5px 0 12px; padding: 9px; border: 1px solid #d9ddd5; border-radius: 12px; background: #fbfcf8; }
 .category-fields { min-width: 0; flex: 1; display: flex; align-items: center; gap: 10px; }

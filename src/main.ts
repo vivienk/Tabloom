@@ -80,7 +80,10 @@ function render(): void {
   const usedCategories = categories.filter((category) => customNames.has(category) || tabs.some((tab) => tab.category === category));
   const filterHtml = ["All", ...usedCategories].map((category) => {
     const count = category === "All" ? tabs.length : tabs.filter((tab) => tab.category === category).length;
-    return `<button class="filter ${activeFilter === category ? "active" : ""}" data-filter="${category}">${category}<span>${count}</span></button>`;
+    const filter = `<button class="filter ${activeFilter === category ? "active" : ""}" data-filter="${escapeHtml(category)}">${escapeHtml(category)}<span>${count}</span></button>`;
+    return customNames.has(category)
+      ? `<div class="custom-filter">${filter}<button class="remove-filter" data-remove-category="${escapeHtml(category)}" title="Remove ${escapeHtml(category)}" aria-label="Remove ${escapeHtml(category)}">×</button></div>`
+      : filter;
   }).join("");
   const addCategoryHtml = addingCategory ? `<form class="category-form" id="category-form">
     <div class="category-fields">
@@ -122,6 +125,22 @@ function render(): void {
 
   document.querySelectorAll<HTMLButtonElement>("[data-filter]").forEach((button) => button.addEventListener("click", () => {
     activeFilter = button.dataset.filter as Category | "All";
+    render();
+  }));
+  document.querySelectorAll<HTMLButtonElement>("[data-remove-category]").forEach((button) => button.addEventListener("click", async () => {
+    const name = button.dataset.removeCategory;
+    if (!name) return;
+    customCategories = customCategories.filter((category) => category.name !== name);
+    for (const tab of tabs) {
+      if (tab.category === name) {
+        tab.category = "Inbox";
+        tab.recommendation = "Keep ungrouped";
+        tab.reason = "Custom category removed";
+      }
+    }
+    categoryOverrides = Object.fromEntries(Object.entries(categoryOverrides).filter(([, category]) => category !== name));
+    if (activeFilter === name) activeFilter = "All";
+    await chrome.storage.local.set({ customCategories, categoryOverrides });
     render();
   }));
   document.querySelectorAll<HTMLInputElement>("[data-id]").forEach((input) => input.addEventListener("change", () => {
