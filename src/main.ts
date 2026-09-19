@@ -36,11 +36,11 @@ function allCategories(): string[] {
 }
 
 function renderLoading(): void {
-  app.innerHTML = `<main class="shell loading"><div class="mark">T</div><h1>Reading this window…</h1><p>Everything stays on your device.</p></main>`;
+  app.innerHTML = `<main class="shell loading"><img class="mark" src="/tabloom-logo.png" alt="Tabloom"><h1>Reading this window…</h1><p>Everything stays on your device.</p></main>`;
 }
 
 function renderError(message: string): void {
-  app.innerHTML = `<main class="shell empty"><div class="mark">T</div><h1>Couldn’t read these tabs</h1><p>${escapeHtml(message)}</p><button id="retry" class="primary">Try again</button></main>`;
+  app.innerHTML = `<main class="shell empty"><img class="mark" src="/tabloom-logo.png" alt="Tabloom"><h1>Couldn’t read these tabs</h1><p>${escapeHtml(message)}</p><button id="retry" class="primary">Try again</button></main>`;
   document.querySelector("#retry")?.addEventListener("click", load);
 }
 
@@ -75,7 +75,7 @@ function render(): void {
     </article>`).join("");
 
   app.innerHTML = `<main class="shell">
-    <header><div><div class="eyebrow"><span class="mark small">T</span> TABLOOM</div><h1>Turn tab chaos<br>into clear groups.</h1></div><button id="refresh" class="icon-button" title="Analyze again">↻</button></header>
+    <header><div><div class="eyebrow"><img class="mark small" src="/tabloom-logo.png" alt=""> TABLOOM</div><h1>Turn tab chaos<br>into clear groups.</h1></div><button id="refresh" class="icon-button" title="Analyze again">↻</button></header>
     <section class="summary">
       <div><strong>${tabs.length}</strong><span>open tabs</span></div>
       <div><strong>${usedCategories.length}</strong><span>suggested groups</span></div>

@@ -6,8 +6,8 @@ button { cursor: pointer; }
 .shell { width: 760px; height: 580px; display: flex; flex-direction: column; padding: 26px 30px 0; }
 header { display: flex; justify-content: space-between; align-items: flex-start; }
 .eyebrow { display: flex; gap: 9px; align-items: center; color: #51615b; font-size: 11px; font-weight: 800; letter-spacing: .14em; }
-.mark { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; background: #173f35; color: #b1fbd2; font: 700 23px Georgia, serif; box-shadow: 0 8px 24px #173f3524; }
-.mark.small { width: 24px; height: 24px; border-radius: 8px; font-size: 13px; box-shadow: none; }
+.mark { width: 52px; height: 52px; border-radius: 14px; display: block; object-fit: contain; filter: drop-shadow(0 8px 12px #173f3530); }
+.mark.small { width: 27px; height: 27px; border-radius: 8px; filter: none; }
 h1 { margin: 10px 0 18px; font: 500 31px/1.02 Georgia, "Times New Roman", serif; letter-spacing: -.025em; }
 .icon-button { border: 1px solid #d8dcd3; background: #ffffffa8; width: 36px; height: 36px; border-radius: 11px; color: #52605b; font-size: 18px; }
 .summary { display: grid; grid-template-columns: 1fr 1fr 1fr 1.4fr; background: #173f35; color: white; border-radius: 16px; padding: 15px 18px; box-shadow: 0 12px 28px #173f3524; }

@@ -3,10 +3,17 @@
   "name": "Tabloom — Smart Tab Organizer",
   "description": "Privately classify, preview, and group your open tabs.",
   "version": "0.1.0",
+  "icons": {
+    "16": "tabloom-logo.png",
+    "32": "tabloom-logo.png",
+    "48": "tabloom-logo.png",
+    "128": "tabloom-logo.png"
+  },
   "permissions": ["tabs", "tabGroups", "storage"],
   "action": {
     "default_title": "Organize tabs with Tabloom",
-    "default_popup": "index.html"
+    "default_popup": "index.html",
+    "default_icon": "tabloom-logo.png"
   },
   "background": {
     "service_worker": "background.js",
