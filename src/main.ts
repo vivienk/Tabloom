@@ -29,6 +29,7 @@ const BUILT_IN_COLORS: Record<string, GroupColor> = {
 let customCategories: CustomCategory[] = [];
 let categoryOverrides: Record<string, string> = {};
 let addingCategory = false;
+let assignmentMode: Category | null = null;
 
 function send<T>(message: Message): Promise<T> {
   return chrome.runtime.sendMessage(message) as Promise<T>;
@@ -68,6 +69,7 @@ function renderError(message: string): void {
 }
 
 function visibleTabs(): ClassifiedTab[] {
+  if (assignmentMode) return analysis?.tabs ?? [];
   return (analysis?.tabs ?? []).filter((tab) => activeFilter === "All" || tab.category === activeFilter);
 }
 
@@ -99,7 +101,7 @@ function render(): void {
   </form>` : "";
   const listHtml = visibleTabs().map((tab) => `
     <article class="tab-row ${tab.duplicateGroup ? "duplicate" : ""}">
-      <label class="check"><input type="checkbox" data-id="${tab.id}" ${selected.has(tab.id) ? "checked" : ""}><span></span></label>
+      <label class="check" title="${assignmentMode ? `Assign to ${escapeHtml(assignmentMode)}` : "Include when grouping"}"><input type="checkbox" ${assignmentMode ? `data-assign-id="${tab.id}" ${tab.category === assignmentMode ? "checked" : ""}` : `data-id="${tab.id}" ${selected.has(tab.id) ? "checked" : ""}`}><span></span></label>
       <div class="favicon">${tab.favIconUrl ? `<img src="${escapeHtml(tab.favIconUrl)}" alt="">` : hostname(tab.url).slice(0, 1).toUpperCase()}</div>
       <div class="tab-copy"><h3>${escapeHtml(tab.title)}</h3><p>${escapeHtml(hostname(tab.url))}</p></div>
       <select class="category-select" data-category-id="${tab.id}" aria-label="Category for ${escapeHtml(tab.title)}">
@@ -118,13 +120,16 @@ function render(): void {
     </section>
     <div class="category-bar"><nav>${filterHtml}</nav><button class="filter add-filter" id="add-category">+ Add category</button></div>
     ${addCategoryHtml}
-    <section class="inventory-head"><div><h2>Preview</h2><p>Choose what gets organized. Nothing will be closed.</p></div><button id="select-suggested" class="text-button">Select suggested</button></section>
+    <section class="inventory-head"><div><h2>${assignmentMode ? `Select tabs for ${escapeHtml(assignmentMode)}` : activeFilter === "All" ? "Preview" : escapeHtml(activeFilter)}</h2><p>${assignmentMode ? "Check the tabs that belong in this category." : "Choose what gets organized. Nothing will be closed."}</p></div>${assignmentMode ? "" : activeFilter === "All" ? `<button id="select-suggested" class="text-button">Select suggested</button>` : `<button id="choose-tabs" class="text-button">Select tabs</button>`}</section>
     <section class="tab-list">${listHtml || `<div class="no-results">No tabs in this category.</div>`}</section>
-    <footer><div><strong>${selected.size}</strong> tabs selected</div><button id="group" class="primary" ${selected.size ? "" : "disabled"}>Approve & group <span>→</span></button></footer>
+    ${assignmentMode
+      ? `<footer><div><strong>${tabs.filter((tab) => tab.category === assignmentMode).length}</strong> tabs in ${escapeHtml(assignmentMode)}</div><button id="done-assigning" class="primary">Done <span>✓</span></button></footer>`
+      : `<footer><div><strong>${selected.size}</strong> tabs selected</div><button id="group" class="primary" ${selected.size ? "" : "disabled"}>Approve & group <span>→</span></button></footer>`}
   </main>`;
 
   document.querySelectorAll<HTMLButtonElement>("[data-filter]").forEach((button) => button.addEventListener("click", () => {
     activeFilter = button.dataset.filter as Category | "All";
+    assignmentMode = null;
     render();
   }));
   document.querySelectorAll<HTMLButtonElement>("[data-remove-category]").forEach((button) => button.addEventListener("click", async () => {
@@ -140,12 +145,32 @@ function render(): void {
     }
     categoryOverrides = Object.fromEntries(Object.entries(categoryOverrides).filter(([, category]) => category !== name));
     if (activeFilter === name) activeFilter = "All";
+    if (assignmentMode === name) assignmentMode = null;
     await chrome.storage.local.set({ customCategories, categoryOverrides });
     render();
   }));
   document.querySelectorAll<HTMLInputElement>("[data-id]").forEach((input) => input.addEventListener("change", () => {
     const id = Number(input.dataset.id);
     input.checked ? selected.add(id) : selected.delete(id);
+    render();
+  }));
+  document.querySelectorAll<HTMLInputElement>("[data-assign-id]").forEach((input) => input.addEventListener("change", async () => {
+    if (!assignmentMode) return;
+    const tab = tabs.find((item) => item.id === Number(input.dataset.assignId));
+    if (!tab) return;
+    if (input.checked) {
+      tab.category = assignmentMode;
+      tab.recommendation = "Group";
+      tab.reason = "Assigned by you";
+      categoryOverrides[overrideKey(tab.url)] = assignmentMode;
+      selected.add(tab.id);
+    } else if (tab.category === assignmentMode) {
+      tab.category = "Inbox";
+      tab.recommendation = "Keep ungrouped";
+      tab.reason = "Removed from category";
+      delete categoryOverrides[overrideKey(tab.url)];
+    }
+    await chrome.storage.local.set({ categoryOverrides });
     render();
   }));
   document.querySelectorAll<HTMLSelectElement>("[data-category-id]").forEach((select) => select.addEventListener("change", async () => {
@@ -180,8 +205,18 @@ function render(): void {
     const color = document.querySelector<HTMLInputElement>('input[name="category-color"]:checked')?.value as GroupColor | undefined;
     customCategories.push({ name, color: color ?? "blue" });
     await chrome.storage.local.set({ customCategories });
-    activeFilter = "All";
+    activeFilter = name;
+    assignmentMode = name;
     addingCategory = false;
+    render();
+  });
+  document.querySelector("#choose-tabs")?.addEventListener("click", () => {
+    if (activeFilter === "All") return;
+    assignmentMode = activeFilter;
+    render();
+  });
+  document.querySelector("#done-assigning")?.addEventListener("click", () => {
+    assignmentMode = null;
     render();
   });
   document.querySelector("#select-suggested")?.addEventListener("click", () => {
