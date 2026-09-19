@@ -36,7 +36,7 @@ chrome.runtime.onMessage.addListener((message: Message, _sender, sendResponse) =
       for (const group of message.groups) {
         if (!group.tabIds.length) continue;
         const groupId = await chrome.tabs.group({ tabIds: group.tabIds });
-        await chrome.tabGroups.update(groupId, { title: group.category, color: COLORS[group.category] ?? "grey", collapsed: false });
+        await chrome.tabGroups.update(groupId, { title: group.category, color: group.color ?? COLORS[group.category] ?? "grey", collapsed: false });
         created.push(group.category);
       }
       return created;

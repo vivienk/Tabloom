@@ -1,13 +1,32 @@
 import "./styles.css";
 import { createClassifier } from "./classifier";
-import { CATEGORIES, type Analysis, type Category, type ClassifiedTab, type Message, type TabInput } from "./types";
+import { CATEGORIES, type Analysis, type Category, type ClassifiedTab, type GroupColor, type Message, type TabInput } from "./types";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 const classifier = createClassifier();
 let analysis: Analysis | null = null;
 let selected = new Set<number>();
 let activeFilter: Category | "All" = "All";
-let customCategories: string[] = [];
+type CustomCategory = { name: string; color: GroupColor };
+
+const GROUP_COLORS: Array<{ name: GroupColor; hex: string }> = [
+  { name: "grey", hex: "#9aa0a6" },
+  { name: "blue", hex: "#5b8def" },
+  { name: "red", hex: "#e76f6f" },
+  { name: "yellow", hex: "#e8b84d" },
+  { name: "green", hex: "#55a978" },
+  { name: "pink", hex: "#d879a1" },
+  { name: "purple", hex: "#9674cf" },
+  { name: "cyan", hex: "#55aeb8" },
+  { name: "orange", hex: "#df8a45" }
+];
+
+const BUILT_IN_COLORS: Record<string, GroupColor> = {
+  Work: "blue", Research: "purple", Learning: "cyan", Shopping: "orange",
+  Social: "pink", Personal: "green", Inbox: "grey"
+};
+
+let customCategories: CustomCategory[] = [];
 let categoryOverrides: Record<string, string> = {};
 let addingCategory = false;
 
@@ -32,7 +51,11 @@ function overrideKey(url: string): string {
 }
 
 function allCategories(): string[] {
-  return [...CATEGORIES, ...customCategories];
+  return [...CATEGORIES, ...customCategories.map((category) => category.name)];
+}
+
+function colorForCategory(name: string): GroupColor {
+  return customCategories.find((category) => category.name === name)?.color ?? BUILT_IN_COLORS[name] ?? "grey";
 }
 
 function renderLoading(): void {
@@ -59,9 +82,16 @@ function render(): void {
     return `<button class="filter ${activeFilter === category ? "active" : ""}" data-filter="${category}">${category}<span>${count}</span></button>`;
   }).join("");
   const addCategoryHtml = addingCategory ? `<form class="category-form" id="category-form">
-    <input id="category-name" maxlength="28" placeholder="Category name" autocomplete="off" autofocus>
-    <button class="mini-primary" type="submit">Add</button>
-    <button class="mini-cancel" id="cancel-category" type="button">Cancel</button>
+    <div class="category-fields">
+      <input id="category-name" maxlength="28" placeholder="Category name" autocomplete="off" autofocus>
+      <div class="color-picker" role="radiogroup" aria-label="Tab group color">
+        ${GROUP_COLORS.map((color, index) => `<label class="color-choice" title="${color.name}">
+          <input type="radio" name="category-color" value="${color.name}" ${index === 1 ? "checked" : ""}>
+          <span style="--swatch:${color.hex}"></span>
+        </label>`).join("")}
+      </div>
+    </div>
+    <div class="category-form-actions"><button class="mini-primary" type="submit">Add</button><button class="mini-cancel" id="cancel-category" type="button">Cancel</button></div>
   </form>` : "";
   const listHtml = visibleTabs().map((tab) => `
     <article class="tab-row ${tab.duplicateGroup ? "duplicate" : ""}">
@@ -127,7 +157,8 @@ function render(): void {
       if (input) input.placeholder = duplicate ? "Category already exists" : "Enter a category name";
       return;
     }
-    customCategories.push(name);
+    const color = document.querySelector<HTMLInputElement>('input[name="category-color"]:checked')?.value as GroupColor | undefined;
+    customCategories.push({ name, color: color ?? "blue" });
     await chrome.storage.local.set({ customCategories });
     activeFilter = name;
     addingCategory = false;
@@ -146,7 +177,7 @@ async function groupSelected(): Promise<void> {
   const button = document.querySelector<HTMLButtonElement>("#group")!;
   button.disabled = true;
   button.textContent = "Grouping…";
-  const groups = allCategories().map((category) => ({ category, tabIds: analysis!.tabs.filter((tab) => selected.has(tab.id) && tab.category === category).map((tab) => tab.id) })).filter((group) => group.tabIds.length);
+  const groups = allCategories().map((category) => ({ category, color: colorForCategory(category), tabIds: analysis!.tabs.filter((tab) => selected.has(tab.id) && tab.category === category).map((tab) => tab.id) })).filter((group) => group.tabIds.length);
   const response = await send<{ ok: boolean; error?: string }>({ type: "GROUP_TABS", groups });
   if (!response.ok) return renderError(response.error ?? "Grouping failed");
   app.innerHTML = `<main class="shell success"><div class="success-icon">✓</div><h1>Your tabs are organized.</h1><p>${selected.size} tabs were arranged into ${groups.length} color-coded groups. No tabs were closed.</p><button id="done" class="primary">Done</button></main>`;
@@ -157,7 +188,14 @@ async function load(): Promise<void> {
   renderLoading();
   try {
     const saved = await chrome.storage.local.get(["customCategories", "categoryOverrides"]);
-    customCategories = Array.isArray(saved.customCategories) ? saved.customCategories.filter((item): item is string => typeof item === "string") : [];
+    customCategories = Array.isArray(saved.customCategories) ? saved.customCategories.flatMap((item): CustomCategory[] => {
+      if (typeof item === "string") return [{ name: item, color: "blue" }];
+      if (item && typeof item === "object" && typeof item.name === "string") {
+        const validColor = GROUP_COLORS.some((color) => color.name === item.color);
+        return [{ name: item.name, color: validColor ? item.color as GroupColor : "blue" }];
+      }
+      return [];
+    }) : [];
     categoryOverrides = saved.categoryOverrides && typeof saved.categoryOverrides === "object" ? saved.categoryOverrides as Record<string, string> : {};
     const response = await send<{ ok: boolean; tabs?: TabInput[]; error?: string }>({ type: "GET_TABS" });
     if (!response.ok || !response.tabs) throw new Error(response.error ?? "Tab inventory unavailable");

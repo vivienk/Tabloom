@@ -25,10 +25,19 @@ nav { min-width: 0; flex: 1; display: flex; gap: 7px; overflow-x: auto; padding-
 .filter.active { background: #173f35; border-color: #173f35; color: white; }
 .filter.active span { background: #ffffff20; }
 .add-filter { flex: none; border-style: dashed; color: #286351; font-weight: 700; }
-.category-form { display: flex; align-items: center; gap: 7px; margin: -5px 0 12px; padding: 9px; border: 1px solid #d9ddd5; border-radius: 12px; background: #fbfcf8; }
-.category-form input { flex: 1; min-width: 0; border: 1px solid #cfd5cc; background: white; border-radius: 8px; padding: 8px 10px; color: #17201d; font-size: 11px; outline: none; }
-.category-form input:focus { border-color: #4b806f; box-shadow: 0 0 0 3px #4b806f18; }
-.category-form input.invalid { border-color: #b96d56; }
+.category-form { display: flex; align-items: center; gap: 10px; margin: -5px 0 12px; padding: 9px; border: 1px solid #d9ddd5; border-radius: 12px; background: #fbfcf8; }
+.category-fields { min-width: 0; flex: 1; display: flex; align-items: center; gap: 10px; }
+.category-form #category-name { flex: 1; min-width: 120px; border: 1px solid #cfd5cc; background: white; border-radius: 8px; padding: 8px 10px; color: #17201d; font-size: 11px; outline: none; }
+.category-form #category-name:focus { border-color: #4b806f; box-shadow: 0 0 0 3px #4b806f18; }
+.category-form #category-name.invalid { border-color: #b96d56; }
+.color-picker { display: flex; align-items: center; gap: 5px; }
+.color-choice { display: grid; place-items: center; cursor: pointer; }
+.color-choice input { position: absolute; opacity: 0; pointer-events: none; }
+.color-choice span { width: 17px; height: 17px; display: block; border-radius: 50%; background: var(--swatch); border: 2px solid #fbfcf8; box-shadow: 0 0 0 1px #cdd2ca; transition: transform 120ms ease, box-shadow 120ms ease; }
+.color-choice:hover span { transform: scale(1.12); }
+.color-choice input:checked + span { transform: scale(1.12); box-shadow: 0 0 0 2px #173f35; }
+.color-choice input:focus-visible + span { box-shadow: 0 0 0 3px #b1fbd2, 0 0 0 5px #173f35; }
+.category-form-actions { display: flex; align-items: center; gap: 3px; }
 .mini-primary, .mini-cancel { border: 0; border-radius: 8px; padding: 8px 12px; font-size: 10px; font-weight: 750; }
 .mini-primary { background: #173f35; color: white; }
 .mini-cancel { background: transparent; color: #6f7974; }

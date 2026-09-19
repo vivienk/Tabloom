@@ -1,5 +1,6 @@
 export const CATEGORIES = ["Work", "Research", "Learning", "Shopping", "Social", "Personal", "Inbox"] as const;
 export type Category = string;
+export type GroupColor = "grey" | "blue" | "red" | "yellow" | "green" | "pink" | "purple" | "cyan" | "orange";
 
 export type TabInput = {
   id: number;
@@ -28,4 +29,4 @@ export type Analysis = {
 
 export type Message =
   | { type: "GET_TABS" }
-  | { type: "GROUP_TABS"; groups: Array<{ category: Category; tabIds: number[] }> };
+  | { type: "GROUP_TABS"; groups: Array<{ category: Category; color: GroupColor; tabIds: number[] }> };
