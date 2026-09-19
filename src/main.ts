@@ -76,7 +76,8 @@ function render(): void {
   const tabs = analysis.tabs;
   const duplicates = new Set(tabs.filter((tab) => tab.duplicateGroup).map((tab) => tab.duplicateGroup)).size;
   const categories = allCategories();
-  const usedCategories = categories.filter((category) => tabs.some((tab) => tab.category === category));
+  const customNames = new Set(customCategories.map((category) => category.name));
+  const usedCategories = categories.filter((category) => customNames.has(category) || tabs.some((tab) => tab.category === category));
   const filterHtml = ["All", ...usedCategories].map((category) => {
     const count = category === "All" ? tabs.length : tabs.filter((tab) => tab.category === category).length;
     return `<button class="filter ${activeFilter === category ? "active" : ""}" data-filter="${category}">${category}<span>${count}</span></button>`;
@@ -160,7 +161,7 @@ function render(): void {
     const color = document.querySelector<HTMLInputElement>('input[name="category-color"]:checked')?.value as GroupColor | undefined;
     customCategories.push({ name, color: color ?? "blue" });
     await chrome.storage.local.set({ customCategories });
-    activeFilter = name;
+    activeFilter = "All";
     addingCategory = false;
     render();
   });
