@@ -22,6 +22,13 @@ export type TabInventory = {
   }>;
 };
 
+export type ClosedTab = {
+  sessionId: string;
+  title: string;
+  url: string;
+  closedAt: number;
+};
+
 export type Recommendation = "Group" | "Review duplicate" | "Keep ungrouped";
 
 export type ClassifiedTab = TabInput & {
@@ -41,4 +48,6 @@ export type Message =
   | { type: "GET_TABS" }
   | { type: "CLOSE_TAB"; tabId: number }
   | { type: "CLOSE_TABS"; tabIds: number[] }
+  | { type: "GET_RECENTLY_CLOSED" }
+  | { type: "RESTORE_TAB"; sessionId: string }
   | { type: "GROUP_TABS"; groups: Array<{ category: Category; color: GroupColor; tabIds: number[] }> };

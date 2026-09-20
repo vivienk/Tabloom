@@ -1,4 +1,4 @@
-import type { Message, TabInput } from "./types";
+import type { ClosedTab, Message, TabInput } from "./types";
 
 const COLORS: Record<string, chrome.tabGroups.ColorEnum> = {
   Work: "blue",
@@ -65,6 +65,35 @@ chrome.runtime.onMessage.addListener((message: Message, _sender, sendResponse) =
 
   if (message.type === "CLOSE_TABS") {
     chrome.tabs.remove(message.tabIds)
+      .then(() => sendResponse({ ok: true }))
+      .catch((error: unknown) => sendResponse({ ok: false, error: String(error) }));
+    return true;
+  }
+
+  if (message.type === "GET_RECENTLY_CLOSED") {
+    chrome.sessions.getRecentlyClosed({ maxResults: 25 }).then((sessions) => {
+      const closedTabs: ClosedTab[] = sessions.flatMap((entry) => {
+        if (entry.tab?.sessionId) return [{
+          sessionId: entry.tab.sessionId,
+          title: entry.tab.title || "Untitled tab",
+          url: entry.tab.url || "",
+          closedAt: entry.lastModified
+        }];
+        if (entry.window?.sessionId) return (entry.window.tabs ?? []).flatMap((tab) => tab.sessionId ? [{
+          sessionId: tab.sessionId,
+          title: tab.title || "Untitled tab",
+          url: tab.url || "",
+          closedAt: entry.lastModified
+        }] : []);
+        return [];
+      });
+      sendResponse({ ok: true, tabs: closedTabs });
+    }).catch((error: unknown) => sendResponse({ ok: false, error: String(error) }));
+    return true;
+  }
+
+  if (message.type === "RESTORE_TAB") {
+    chrome.sessions.restore(message.sessionId)
       .then(() => sendResponse({ ok: true }))
       .catch((error: unknown) => sendResponse({ ok: false, error: String(error) }));
     return true;

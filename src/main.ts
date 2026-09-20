@@ -2,7 +2,7 @@ import "./styles.css";
 import { createClassifier } from "./classifier";
 import { improveWithOnDeviceAI } from "./ai-classifier";
 import { icon } from "./icons";
-import { CATEGORIES, type Analysis, type Category, type ClassifiedTab, type GroupColor, type Message, type TabInventory } from "./types";
+import { CATEGORIES, type Analysis, type Category, type ClassifiedTab, type ClosedTab, type GroupColor, type Message, type TabInventory } from "./types";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 const classifier = createClassifier();
@@ -13,6 +13,8 @@ let activeFilter: Category | "All" = "All";
 let duplicateView = false;
 let windowOverview = false;
 let activeWindowId: number | null = null;
+let historyView = false;
+let recentlyClosed: ClosedTab[] = [];
 let searchQuery = "";
 type CustomCategory = { name: string; color: GroupColor };
 
@@ -160,6 +162,11 @@ function render(preservedScrollTop?: number): void {
     <span class="window-copy"><strong>${escapeHtml(window.activeTabTitle)}</strong><span>${window.tabCount} ${window.tabCount === 1 ? "tab" : "tabs"}${window.focused ? " · Current window" : ""}</span></span>
     ${icon("arrowRight")}
   </button>`).join("");
+  const historyHtml = recentlyClosed.map((tab) => `<article class="history-row">
+    <div class="history-icon">${icon("clock")}</div>
+    <div class="tab-copy"><h3>${escapeHtml(tab.title)}</h3><p>${escapeHtml(hostname(tab.url))}</p></div>
+    <button class="restore-button" data-restore-session="${escapeHtml(tab.sessionId)}">${icon("refresh")} Restore</button>
+  </article>`).join("");
 
   app.innerHTML = `<main class="shell">
     <header><div><div class="eyebrow"><img class="mark small" src="/tabloom-logo.png" alt=""> TABLOOM</div><h1>Turn tab chaos<br>into clear groups.</h1></div><button id="refresh" class="icon-button" title="Analyze again" aria-label="Analyze tabs again">${icon("refresh")}</button></header>
@@ -172,9 +179,11 @@ function render(preservedScrollTop?: number): void {
     <div class="search-box">${icon("search")}<input id="tab-search" type="search" value="${escapeHtml(searchQuery)}" placeholder="Search tabs, websites, or categories" aria-label="Search tabs">${searchQuery ? `<button id="clear-search" title="Clear search" aria-label="Clear search">${icon("x")}</button>` : ""}</div>
     <div class="category-bar"><nav>${filterHtml}</nav><button class="filter add-filter" id="add-category">${icon("plus")} Add category</button></div>
     ${addCategoryHtml}
-    <section class="inventory-head"><div><h2>${windowOverview ? "Open windows" : assignmentMode ? `Select tabs for ${escapeHtml(assignmentMode)}` : duplicateView ? "Duplicate sets" : windowNumber ? `Window ${windowNumber}` : activeFilter === "All" ? "All open tabs" : escapeHtml(activeFilter)}</h2><p>${windowOverview ? "Choose a window to see every tab inside it." : assignmentMode ? "Check the tabs that belong in this category." : duplicateView ? `${duplicateTabs} tabs across ${duplicates} likely duplicate sets. Only extra copies will close; one tab per set stays open.` : aiMessage ? escapeHtml(aiMessage) : "Choose what gets organized. Tabs close only when you use their trash button."}</p></div>${duplicateView ? `<button id="close-duplicates" class="danger-button" ${duplicateTabsToClose.length ? "" : "disabled"}>${icon("trash")} Close extra duplicates</button>` : windowOverview || assignmentMode ? "" : activeFilter === "All" && activeWindowId === null ? `<div class="inventory-actions"><button id="improve-ai" class="ai-button" ${aiState === "working" ? "disabled" : ""}>${icon("sparkles")}${aiState === "working" ? "Improving…" : "Improve with on-device AI"}</button><button id="select-suggested" class="text-button">${icon("list")} Select suggested</button></div>` : activeFilter !== "All" ? `<button id="choose-tabs" class="text-button">${icon("list")} Select tabs</button>` : ""}</section>
-    <section class="tab-list ${windowOverview ? "window-list" : ""}">${windowOverview ? windowsHtml || `<div class="no-results">No windows match your search.</div>` : listHtml || `<div class="no-results">${searchQuery ? "No tabs match your search." : "No tabs in this category."}</div>`}</section>
-    ${assignmentMode
+    <section class="inventory-head"><div><h2>${historyView ? "Recently closed tabs" : windowOverview ? "Open windows" : assignmentMode ? `Select tabs for ${escapeHtml(assignmentMode)}` : duplicateView ? "Duplicate sets" : windowNumber ? `Window ${windowNumber}` : activeFilter === "All" ? "All open tabs" : escapeHtml(activeFilter)}</h2><p>${historyView ? "Restore a tab you closed recently." : windowOverview ? "Choose a window to see every tab inside it." : assignmentMode ? "Check the tabs that belong in this category." : duplicateView ? `${duplicateTabs} tabs across ${duplicates} likely duplicate sets. Only extra copies will close; one tab per set stays open.` : aiMessage ? escapeHtml(aiMessage) : "Choose what gets organized. Tabs close only when you use their trash button."}</p></div>${historyView ? `<button id="back-to-duplicates" class="text-button">${icon("arrowRight")} Back to duplicates</button>` : duplicateView ? `<div class="duplicate-actions"><button id="close-duplicates" class="danger-button" ${duplicateTabsToClose.length ? "" : "disabled"}>${icon("trash")} Close extra duplicates</button><button id="show-history" class="history-button">${icon("clock")} Recently closed tabs</button></div>` : windowOverview || assignmentMode ? "" : activeFilter === "All" && activeWindowId === null ? `<div class="inventory-actions"><button id="improve-ai" class="ai-button" ${aiState === "working" ? "disabled" : ""}>${icon("sparkles")}${aiState === "working" ? "Improving…" : "Improve with on-device AI"}</button><button id="select-suggested" class="text-button">${icon("list")} Select suggested</button></div>` : activeFilter !== "All" ? `<button id="choose-tabs" class="text-button">${icon("list")} Select tabs</button>` : ""}</section>
+    <section class="tab-list ${windowOverview ? "window-list" : ""}">${historyView ? historyHtml || `<div class="no-results">No recently closed tabs.</div>` : windowOverview ? windowsHtml || `<div class="no-results">No windows match your search.</div>` : listHtml || `<div class="no-results">${searchQuery ? "No tabs match your search." : "No tabs in this category."}</div>`}</section>
+    ${historyView
+      ? `<footer><div><strong>${recentlyClosed.length}</strong> recently closed tabs</div></footer>`
+      : assignmentMode
       ? `<footer><div><strong>${tabs.filter((tab) => tab.category === assignmentMode).length}</strong> tabs in ${escapeHtml(assignmentMode)}</div><button id="done-assigning" class="primary">Done ${icon("check")}</button></footer>`
       : `<footer><div><strong>${selected.size}</strong> tabs selected</div><button id="group" class="primary" ${selected.size ? "" : "disabled"}>Approve & group ${icon("arrowRight")}</button></footer>`}
   </main>`;
@@ -187,6 +196,7 @@ function render(preservedScrollTop?: number): void {
   document.querySelectorAll<HTMLButtonElement>("[data-filter]").forEach((button) => button.addEventListener("click", () => {
     activeFilter = button.dataset.filter as Category | "All";
     duplicateView = false;
+    historyView = false;
     windowOverview = false;
     activeWindowId = null;
     assignmentMode = null;
@@ -195,6 +205,7 @@ function render(preservedScrollTop?: number): void {
   document.querySelector("#show-all-tabs")?.addEventListener("click", () => {
     activeFilter = "All";
     duplicateView = false;
+    historyView = false;
     windowOverview = false;
     activeWindowId = null;
     assignmentMode = null;
@@ -214,6 +225,7 @@ function render(preservedScrollTop?: number): void {
   });
   document.querySelector("#show-duplicates")?.addEventListener("click", () => {
     duplicateView = true;
+    historyView = false;
     windowOverview = false;
     activeWindowId = null;
     assignmentMode = null;
@@ -222,6 +234,7 @@ function render(preservedScrollTop?: number): void {
   document.querySelector("#show-windows")?.addEventListener("click", () => {
     windowOverview = true;
     duplicateView = false;
+    historyView = false;
     activeWindowId = null;
     assignmentMode = null;
     render();
@@ -230,6 +243,36 @@ function render(preservedScrollTop?: number): void {
     activeWindowId = Number(button.dataset.windowId);
     windowOverview = false;
     activeFilter = "All";
+    render();
+  }));
+  document.querySelector("#show-history")?.addEventListener("click", async () => {
+    const response = await send<{ ok: boolean; tabs?: ClosedTab[]; error?: string }>({ type: "GET_RECENTLY_CLOSED" });
+    if (!response.ok) {
+      aiMessage = response.error ?? "Chrome could not read recently closed tabs.";
+      render();
+      return;
+    }
+    recentlyClosed = response.tabs ?? [];
+    historyView = true;
+    duplicateView = false;
+    render();
+  });
+  document.querySelector("#back-to-duplicates")?.addEventListener("click", () => {
+    historyView = false;
+    duplicateView = true;
+    render();
+  });
+  document.querySelectorAll<HTMLButtonElement>("[data-restore-session]").forEach((button) => button.addEventListener("click", async () => {
+    const sessionId = button.dataset.restoreSession;
+    if (!sessionId) return;
+    button.disabled = true;
+    const response = await send<{ ok: boolean; error?: string }>({ type: "RESTORE_TAB", sessionId });
+    if (!response.ok) {
+      aiMessage = response.error ?? "Chrome could not restore that tab.";
+      render();
+      return;
+    }
+    recentlyClosed = recentlyClosed.filter((tab) => tab.sessionId !== sessionId);
     render();
   }));
   document.querySelectorAll<HTMLButtonElement>("[data-close-tab]").forEach((button) => button.addEventListener("click", async () => {

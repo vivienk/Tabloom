@@ -9,7 +9,7 @@
     "48": "tabloom-logo.png",
     "128": "tabloom-logo.png"
   },
-  "permissions": ["tabs", "tabGroups", "storage"],
+  "permissions": ["tabs", "tabGroups", "storage", "sessions"],
   "action": {
     "default_title": "Organize tabs with Tabloom",
     "default_popup": "index.html",

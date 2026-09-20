@@ -1,9 +1,10 @@
-type IconName = "arrowRight" | "check" | "checkCircle" | "list" | "plus" | "refresh" | "search" | "shield" | "sparkles" | "trash" | "x";
+type IconName = "arrowRight" | "check" | "checkCircle" | "clock" | "list" | "plus" | "refresh" | "search" | "shield" | "sparkles" | "trash" | "x";
 
 const paths: Record<IconName, string> = {
   arrowRight: '<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />',
   check: '<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />',
   checkCircle: '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />',
+  clock: '<path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />',
   list: '<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.008v.008H3.75V6.75Zm0 5.25h.008v.008H3.75V12Zm0 5.25h.008v.008H3.75v-.008Z" />',
   plus: '<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />',
   refresh: '<path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992V4.356m-1.184 10.26a8.25 8.25 0 1 1-2.334-8.498l3.518 3.23" />',
