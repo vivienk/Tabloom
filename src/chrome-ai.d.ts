@@ -6,6 +6,8 @@ interface LanguageModelSession {
 }
 
 interface LanguageModelCreateOptions {
+  expectedInputs?: Array<{ type: "text"; languages: string[] }>;
+  expectedOutputs?: Array<{ type: "text"; languages: string[] }>;
   initialPrompts?: Array<{ role: "system" | "user" | "assistant"; content: string }>;
   monitor?: (monitor: EventTarget) => void;
 }

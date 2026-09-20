@@ -55,6 +55,15 @@ function overrideKey(url: string): string {
   } catch { return url.toLowerCase(); }
 }
 
+function aiErrorMessage(error: unknown): string {
+  if (!(error instanceof Error)) return String(error);
+  if (error.name === "NotAllowedError") return "Chrome blocked the model start. Click the AI button again and keep Tabloom open.";
+  if (error.name === "NotSupportedError") return "Chrome’s on-device model does not support this device or language yet.";
+  if (error.name === "QuotaExceededError") return "The on-device model ran out of space for this tab set. Try again with fewer open tabs.";
+  if (error.name === "InvalidStateError") return "Chrome’s on-device model is still preparing. Keep Tabloom open and try again shortly.";
+  return error.message;
+}
+
 function allCategories(): string[] {
   return [...CATEGORIES, ...customCategories.map((category) => category.name)];
 }
@@ -250,7 +259,7 @@ async function improveWithAI(): Promise<void> {
     selected = new Set(analysis.tabs.filter((tab) => tab.recommendation === "Group" && !tab.pinned).map((tab) => tab.id));
   } catch (error) {
     aiState = "error";
-    aiMessage = error instanceof Error ? error.message : String(error);
+    aiMessage = aiErrorMessage(error);
   }
   render();
 }
