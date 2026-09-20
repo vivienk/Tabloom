@@ -12,14 +12,11 @@ const COLORS: Record<string, chrome.tabGroups.ColorEnum> = {
 
 chrome.runtime.onMessage.addListener((message: Message, _sender, sendResponse) => {
   if (message.type === "GET_TABS") {
-    Promise.all([
-      chrome.tabs.query({ currentWindow: true }),
-      chrome.windows.getAll({ windowTypes: ["normal"] })
-    ]).then(([tabs, windows]) => {
-      const inventory: TabInput[] = tabs
-        .filter((tab): tab is chrome.tabs.Tab & { id: number; windowId: number } => tab.id !== undefined && tab.windowId !== undefined)
-        .filter((tab) => !tab.url?.startsWith("chrome://") && !tab.url?.startsWith("chrome-extension://"))
-        .map((tab) => ({
+    chrome.windows.getAll({ populate: true, windowTypes: ["normal"] }).then((windows) => {
+      const toTabInput = (tab: chrome.tabs.Tab): TabInput | null => {
+        if (tab.id === undefined || tab.windowId === undefined) return null;
+        if (tab.url?.startsWith("chrome://") || tab.url?.startsWith("chrome-extension://")) return null;
+        return {
           id: tab.id,
           windowId: tab.windowId,
           title: tab.title || "Untitled tab",
@@ -27,8 +24,19 @@ chrome.runtime.onMessage.addListener((message: Message, _sender, sendResponse) =
           favIconUrl: tab.favIconUrl,
           pinned: Boolean(tab.pinned),
           active: Boolean(tab.active)
-        }));
-      sendResponse({ ok: true, tabs: inventory, windowCount: windows.length });
+        };
+      };
+      const inventory = windows.flatMap((window) => (window.tabs ?? []).flatMap((tab) => {
+        const item = toTabInput(tab);
+        return item ? [item] : [];
+      }));
+      const windowInventory = windows.flatMap((window) => window.id === undefined ? [] : [{
+        id: window.id,
+        focused: Boolean(window.focused),
+        tabCount: inventory.filter((tab) => tab.windowId === window.id).length,
+        activeTabTitle: window.tabs?.find((tab) => tab.active)?.title || "Untitled window"
+      }]);
+      sendResponse({ ok: true, tabs: inventory, windows: windowInventory });
     }).catch((error: unknown) => sendResponse({ ok: false, error: String(error) }));
     return true;
   }

@@ -14,7 +14,12 @@ export type TabInput = {
 
 export type TabInventory = {
   tabs: TabInput[];
-  windowCount: number;
+  windows: Array<{
+    id: number;
+    focused: boolean;
+    tabCount: number;
+    activeTabTitle: string;
+  }>;
 };
 
 export type Recommendation = "Group" | "Review duplicate" | "Keep ungrouped";

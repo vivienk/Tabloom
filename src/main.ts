@@ -7,10 +7,12 @@ import { CATEGORIES, type Analysis, type Category, type ClassifiedTab, type Grou
 const app = document.querySelector<HTMLDivElement>("#app")!;
 const classifier = createClassifier();
 let analysis: Analysis | null = null;
-let windowCount = 1;
+let browserWindows: TabInventory["windows"] = [];
 let selected = new Set<number>();
 let activeFilter: Category | "All" = "All";
 let duplicateView = false;
+let windowOverview = false;
+let activeWindowId: number | null = null;
 let searchQuery = "";
 type CustomCategory = { name: string; color: GroupColor };
 
@@ -91,6 +93,7 @@ function visibleTabs(): ClassifiedTab[] {
     .filter((tab) => Boolean(tab.duplicateGroup))
     .sort((left, right) => (left.duplicateGroup ?? "").localeCompare(right.duplicateGroup ?? ""));
   else tabs = (analysis?.tabs ?? []).filter((tab) => activeFilter === "All" || tab.category === activeFilter);
+  if (activeWindowId !== null) tabs = tabs.filter((tab) => tab.windowId === activeWindowId);
   const query = searchQuery.trim().toLowerCase();
   return query ? tabs.filter((tab) => `${tab.title} ${tab.url} ${tab.category}`.toLowerCase().includes(query)) : tabs;
 }
@@ -102,6 +105,12 @@ function render(): void {
   const duplicateLabels = new Map(duplicateKeys.map((key, index) => [key, index + 1]));
   const duplicates = duplicateKeys.length;
   const duplicateTabs = tabs.filter((tab) => tab.duplicateGroup).length;
+  const windowNumber = activeWindowId === null ? null : browserWindows.findIndex((window) => window.id === activeWindowId) + 1;
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+  const visibleWindows = normalizedSearch ? browserWindows.filter((window) => {
+    const windowTabs = tabs.filter((tab) => tab.windowId === window.id);
+    return window.activeTabTitle.toLowerCase().includes(normalizedSearch) || windowTabs.some((tab) => `${tab.title} ${tab.url} ${tab.category}`.toLowerCase().includes(normalizedSearch));
+  }) : browserWindows;
   const categories = allCategories();
   const customNames = new Set(customCategories.map((category) => category.name));
   const usedCategories = categories.filter((category) => customNames.has(category) || tabs.some((tab) => tab.category === category));
@@ -135,20 +144,25 @@ function render(): void {
       <div class="action ${tab.duplicateGroup ? "warn" : ""}">${tab.duplicateGroup ? `Duplicate set ${duplicateLabels.get(tab.duplicateGroup)}` : tab.recommendation}</div>
       <button class="trash-button" data-close-tab="${tab.id}" title="Close ${escapeHtml(tab.title)}" aria-label="Close ${escapeHtml(tab.title)}">${icon("trash")}</button>
     </article>`).join("");
+  const windowsHtml = visibleWindows.map((window) => `<button class="window-card" data-window-id="${window.id}">
+    <span class="window-number">${browserWindows.findIndex((item) => item.id === window.id) + 1}</span>
+    <span class="window-copy"><strong>${escapeHtml(window.activeTabTitle)}</strong><span>${window.tabCount} ${window.tabCount === 1 ? "tab" : "tabs"}${window.focused ? " · Current window" : ""}</span></span>
+    ${icon("arrowRight")}
+  </button>`).join("");
 
   app.innerHTML = `<main class="shell">
     <header><div><div class="eyebrow"><img class="mark small" src="/tabloom-logo.png" alt=""> TABLOOM</div><h1>Turn tab chaos<br>into clear groups.</h1></div><button id="refresh" class="icon-button" title="Analyze again" aria-label="Analyze tabs again">${icon("refresh")}</button></header>
     <section class="summary">
       <div><strong>${tabs.length}</strong><span>open tabs</span></div>
-      <div><strong>${windowCount}</strong><span>${windowCount === 1 ? "window" : "windows"} open</span></div>
+      <button id="show-windows" class="summary-card ${windowOverview || activeWindowId !== null ? "active" : ""}"><strong>${browserWindows.length}</strong><span>${browserWindows.length === 1 ? "window" : "windows"} open</span></button>
       <button id="show-duplicates" class="summary-card ${duplicateView ? "active" : ""}" ${duplicates ? "" : "disabled"}><strong>${duplicates}</strong><span>duplicate sets</span></button>
       <div class="privacy">${icon("shield")}<span>Local analysis</span></div>
     </section>
     <div class="search-box">${icon("search")}<input id="tab-search" type="search" value="${escapeHtml(searchQuery)}" placeholder="Search tabs, websites, or categories" aria-label="Search tabs">${searchQuery ? `<button id="clear-search" title="Clear search" aria-label="Clear search">${icon("x")}</button>` : ""}</div>
     <div class="category-bar"><nav>${filterHtml}</nav><button class="filter add-filter" id="add-category">${icon("plus")} Add category</button></div>
     ${addCategoryHtml}
-    <section class="inventory-head"><div><h2>${assignmentMode ? `Select tabs for ${escapeHtml(assignmentMode)}` : duplicateView ? "Duplicate sets" : activeFilter === "All" ? "Preview" : escapeHtml(activeFilter)}</h2><p>${assignmentMode ? "Check the tabs that belong in this category." : duplicateView ? `${duplicateTabs} tabs across ${duplicates} likely duplicate sets. Remove only the extras you do not need.` : aiMessage ? escapeHtml(aiMessage) : "Choose what gets organized. Tabs close only when you use their trash button."}</p></div>${assignmentMode || duplicateView ? "" : activeFilter === "All" ? `<div class="inventory-actions"><button id="improve-ai" class="ai-button" ${aiState === "working" ? "disabled" : ""}>${icon("sparkles")}${aiState === "working" ? "Improving…" : "Improve with on-device AI"}</button><button id="select-suggested" class="text-button">${icon("list")} Select suggested</button></div>` : `<button id="choose-tabs" class="text-button">${icon("list")} Select tabs</button>`}</section>
-    <section class="tab-list">${listHtml || `<div class="no-results">${searchQuery ? "No tabs match your search." : "No tabs in this category."}</div>`}</section>
+    <section class="inventory-head"><div><h2>${windowOverview ? "Open windows" : assignmentMode ? `Select tabs for ${escapeHtml(assignmentMode)}` : duplicateView ? "Duplicate sets" : windowNumber ? `Window ${windowNumber}` : activeFilter === "All" ? "All open tabs" : escapeHtml(activeFilter)}</h2><p>${windowOverview ? "Choose a window to see every tab inside it." : assignmentMode ? "Check the tabs that belong in this category." : duplicateView ? `${duplicateTabs} tabs across ${duplicates} likely duplicate sets. Remove only the extras you do not need.` : aiMessage ? escapeHtml(aiMessage) : "Choose what gets organized. Tabs close only when you use their trash button."}</p></div>${windowOverview || assignmentMode || duplicateView ? "" : activeFilter === "All" && activeWindowId === null ? `<div class="inventory-actions"><button id="improve-ai" class="ai-button" ${aiState === "working" ? "disabled" : ""}>${icon("sparkles")}${aiState === "working" ? "Improving…" : "Improve with on-device AI"}</button><button id="select-suggested" class="text-button">${icon("list")} Select suggested</button></div>` : activeFilter !== "All" ? `<button id="choose-tabs" class="text-button">${icon("list")} Select tabs</button>` : ""}</section>
+    <section class="tab-list ${windowOverview ? "window-list" : ""}">${windowOverview ? windowsHtml || `<div class="no-results">No windows match your search.</div>` : listHtml || `<div class="no-results">${searchQuery ? "No tabs match your search." : "No tabs in this category."}</div>`}</section>
     ${assignmentMode
       ? `<footer><div><strong>${tabs.filter((tab) => tab.category === assignmentMode).length}</strong> tabs in ${escapeHtml(assignmentMode)}</div><button id="done-assigning" class="primary">Done ${icon("check")}</button></footer>`
       : `<footer><div><strong>${selected.size}</strong> tabs selected</div><button id="group" class="primary" ${selected.size ? "" : "disabled"}>Approve & group ${icon("arrowRight")}</button></footer>`}
@@ -157,6 +171,8 @@ function render(): void {
   document.querySelectorAll<HTMLButtonElement>("[data-filter]").forEach((button) => button.addEventListener("click", () => {
     activeFilter = button.dataset.filter as Category | "All";
     duplicateView = false;
+    windowOverview = false;
+    activeWindowId = null;
     assignmentMode = null;
     render();
   }));
@@ -174,9 +190,24 @@ function render(): void {
   });
   document.querySelector("#show-duplicates")?.addEventListener("click", () => {
     duplicateView = true;
+    windowOverview = false;
+    activeWindowId = null;
     assignmentMode = null;
     render();
   });
+  document.querySelector("#show-windows")?.addEventListener("click", () => {
+    windowOverview = true;
+    duplicateView = false;
+    activeWindowId = null;
+    assignmentMode = null;
+    render();
+  });
+  document.querySelectorAll<HTMLButtonElement>("[data-window-id]").forEach((button) => button.addEventListener("click", () => {
+    activeWindowId = Number(button.dataset.windowId);
+    windowOverview = false;
+    activeFilter = "All";
+    render();
+  }));
   document.querySelectorAll<HTMLButtonElement>("[data-close-tab]").forEach((button) => button.addEventListener("click", async () => {
     const tab = tabs.find((item) => item.id === Number(button.dataset.closeTab));
     if (!tab || !window.confirm(`Close “${tab.title}”?\n\nYou can restore it from Chrome’s recently closed tabs.`)) return;
@@ -315,7 +346,7 @@ async function groupSelected(): Promise<void> {
   const button = document.querySelector<HTMLButtonElement>("#group")!;
   button.disabled = true;
   button.textContent = "Grouping…";
-  const groups = allCategories().map((category) => ({ category, color: colorForCategory(category), tabIds: analysis!.tabs.filter((tab) => selected.has(tab.id) && tab.category === category).map((tab) => tab.id) })).filter((group) => group.tabIds.length);
+  const groups = browserWindows.flatMap((window) => allCategories().map((category) => ({ category, color: colorForCategory(category), tabIds: analysis!.tabs.filter((tab) => selected.has(tab.id) && tab.windowId === window.id && tab.category === category).map((tab) => tab.id) }))).filter((group) => group.tabIds.length);
   const response = await send<{ ok: boolean; error?: string }>({ type: "GROUP_TABS", groups });
   if (!response.ok) return renderError(response.error ?? "Grouping failed");
   app.innerHTML = `<main class="shell success"><div class="success-icon">${icon("checkCircle")}</div><h1>Your tabs are organized.</h1><p>${selected.size} tabs were arranged into ${groups.length} color-coded groups. No tabs were closed.</p><button id="done" class="primary">Done ${icon("check")}</button></main>`;
@@ -335,9 +366,9 @@ async function load(): Promise<void> {
       return [];
     }) : [];
     categoryOverrides = saved.categoryOverrides && typeof saved.categoryOverrides === "object" ? saved.categoryOverrides as Record<string, string> : {};
-    const response = await send<{ ok: boolean; tabs?: TabInventory["tabs"]; windowCount?: number; error?: string }>({ type: "GET_TABS" });
+    const response = await send<{ ok: boolean; tabs?: TabInventory["tabs"]; windows?: TabInventory["windows"]; error?: string }>({ type: "GET_TABS" });
     if (!response.ok || !response.tabs) throw new Error(response.error ?? "Tab inventory unavailable");
-    windowCount = response.windowCount ?? 1;
+    browserWindows = response.windows ?? [];
     analysis = await classifier.classify(response.tabs);
     for (const tab of analysis.tabs) {
       const override = categoryOverrides[overrideKey(tab.url)];
