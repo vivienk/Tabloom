@@ -12,7 +12,7 @@ Tabloom is a privacy-first Chrome extension that turns the tabs in your current 
 - Classifies tabs into Work, Research, Learning, Shopping, Social, Personal, or Inbox
 - Flags exact and tracking-parameter variants as likely duplicates
 - Opens a dedicated duplicate-sets view and lets you explicitly remove unwanted tabs
-- Can close duplicate tabs in bulk while keeping one tab from every set
+- Can close only the extra copies in detected duplicate sets while keeping one tab from every set
 - Supports removable custom categories with selectable tab-group colors and remembers category corrections for matching pages
 - Lets you open any category and select exactly which tabs belong under it
 - Optionally refines uncertain results with Chrome's private, on-device Prompt API
