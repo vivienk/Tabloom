@@ -98,7 +98,7 @@ function visibleTabs(): ClassifiedTab[] {
   return query ? tabs.filter((tab) => `${tab.title} ${tab.url} ${tab.category}`.toLowerCase().includes(query)) : tabs;
 }
 
-function render(): void {
+function render(preservedScrollTop?: number): void {
   if (!analysis) return;
   const tabs = analysis.tabs;
   const duplicateKeys = [...new Set(tabs.flatMap((tab) => tab.duplicateGroup ? [tab.duplicateGroup] : []))].sort();
@@ -113,7 +113,13 @@ function render(): void {
   }) : browserWindows;
   const categories = allCategories();
   const customNames = new Set(customCategories.map((category) => category.name));
-  const usedCategories = categories.filter((category) => customNames.has(category) || tabs.some((tab) => tab.category === category));
+  const categoryOrder = new Map(categories.map((category, index) => [category, index]));
+  const usedCategories = categories
+    .filter((category) => customNames.has(category) || tabs.some((tab) => tab.category === category))
+    .sort((left, right) => {
+      const countDifference = tabs.filter((tab) => tab.category === right).length - tabs.filter((tab) => tab.category === left).length;
+      return countDifference || (categoryOrder.get(left) ?? 0) - (categoryOrder.get(right) ?? 0);
+    });
   const filterHtml = ["All", ...usedCategories].map((category) => {
     const count = category === "All" ? tabs.length : tabs.filter((tab) => tab.category === category).length;
     const filter = `<button class="filter ${activeFilter === category ? "active" : ""}" data-filter="${escapeHtml(category)}">${escapeHtml(category)}<span>${count}</span></button>`;
@@ -153,7 +159,7 @@ function render(): void {
   app.innerHTML = `<main class="shell">
     <header><div><div class="eyebrow"><img class="mark small" src="/tabloom-logo.png" alt=""> TABLOOM</div><h1>Turn tab chaos<br>into clear groups.</h1></div><button id="refresh" class="icon-button" title="Analyze again" aria-label="Analyze tabs again">${icon("refresh")}</button></header>
     <section class="summary">
-      <div><strong>${tabs.length}</strong><span>open tabs</span></div>
+      <button id="show-all-tabs" class="summary-card ${!windowOverview && activeWindowId === null && !duplicateView && activeFilter === "All" ? "active" : ""}"><strong>${tabs.length}</strong><span>open tabs</span></button>
       <button id="show-windows" class="summary-card ${windowOverview || activeWindowId !== null ? "active" : ""}"><strong>${browserWindows.length}</strong><span>${browserWindows.length === 1 ? "window" : "windows"} open</span></button>
       <button id="show-duplicates" class="summary-card ${duplicateView ? "active" : ""}" ${duplicates ? "" : "disabled"}><strong>${duplicates}</strong><span>duplicate sets</span></button>
       <div class="privacy">${icon("shield")}<span>Local analysis</span></div>
@@ -168,6 +174,11 @@ function render(): void {
       : `<footer><div><strong>${selected.size}</strong> tabs selected</div><button id="group" class="primary" ${selected.size ? "" : "disabled"}>Approve & group ${icon("arrowRight")}</button></footer>`}
   </main>`;
 
+  if (preservedScrollTop !== undefined) {
+    const list = document.querySelector<HTMLElement>(".tab-list");
+    if (list) list.scrollTop = preservedScrollTop;
+  }
+
   document.querySelectorAll<HTMLButtonElement>("[data-filter]").forEach((button) => button.addEventListener("click", () => {
     activeFilter = button.dataset.filter as Category | "All";
     duplicateView = false;
@@ -176,6 +187,14 @@ function render(): void {
     assignmentMode = null;
     render();
   }));
+  document.querySelector("#show-all-tabs")?.addEventListener("click", () => {
+    activeFilter = "All";
+    duplicateView = false;
+    windowOverview = false;
+    activeWindowId = null;
+    assignmentMode = null;
+    render();
+  });
   document.querySelector<HTMLInputElement>("#tab-search")?.addEventListener("input", (event) => {
     searchQuery = (event.currentTarget as HTMLInputElement).value;
     render();
@@ -240,11 +259,13 @@ function render(): void {
     render();
   }));
   document.querySelectorAll<HTMLInputElement>("[data-id]").forEach((input) => input.addEventListener("change", () => {
+    const scrollTop = document.querySelector<HTMLElement>(".tab-list")?.scrollTop;
     const id = Number(input.dataset.id);
     input.checked ? selected.add(id) : selected.delete(id);
-    render();
+    render(scrollTop);
   }));
   document.querySelectorAll<HTMLInputElement>("[data-assign-id]").forEach((input) => input.addEventListener("change", async () => {
+    const scrollTop = document.querySelector<HTMLElement>(".tab-list")?.scrollTop;
     if (!assignmentMode) return;
     const tab = tabs.find((item) => item.id === Number(input.dataset.assignId));
     if (!tab) return;
@@ -261,7 +282,7 @@ function render(): void {
       delete categoryOverrides[overrideKey(tab.url)];
     }
     await chrome.storage.local.set({ categoryOverrides });
-    render();
+    render(scrollTop);
   }));
   document.querySelectorAll<HTMLSelectElement>("[data-category-id]").forEach((select) => select.addEventListener("change", async () => {
     const tab = tabs.find((item) => item.id === Number(select.dataset.categoryId));

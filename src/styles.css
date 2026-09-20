@@ -33,8 +33,8 @@ h1 { margin: 10px 0 18px; font: 500 31px/1.02 Georgia, "Times New Roman", serif;
 .search-box button { width: 24px; height: 24px; display: grid; place-items: center; border: 0; border-radius: 7px; background: transparent; color: #77817c; }
 .search-box button:hover, .search-box button:focus-visible { background: #e8ebe5; color: #354a42; outline: none; }
 .search-box button .icon { width: 13px; height: 13px; }
-.category-bar { display: flex; align-items: center; gap: 8px; margin: 10px 0 11px; }
-nav { min-width: 0; flex: 1; display: flex; gap: 7px; overflow-x: auto; padding-bottom: 2px; }
+.category-bar { display: flex; flex-direction: column; align-items: flex-start; gap: 7px; margin: 10px 0 9px; }
+nav { width: 100%; min-width: 0; display: flex; gap: 7px; overflow-x: auto; padding-bottom: 2px; }
 .filter { border: 1px solid #d9ddd5; background: #fafbf7; border-radius: 20px; color: #67716d; padding: 7px 11px; font-size: 11px; white-space: nowrap; }
 .filter span { display: inline-grid; place-items: center; margin-left: 6px; min-width: 17px; height: 17px; padding: 0 4px; background: #e9ece5; border-radius: 9px; font-size: 9px; }
 .filter.active { background: #173f35; border-color: #173f35; color: white; }
