@@ -40,4 +40,5 @@ export type Analysis = {
 export type Message =
   | { type: "GET_TABS" }
   | { type: "CLOSE_TAB"; tabId: number }
+  | { type: "CLOSE_TABS"; tabIds: number[] }
   | { type: "GROUP_TABS"; groups: Array<{ category: Category; color: GroupColor; tabIds: number[] }> };

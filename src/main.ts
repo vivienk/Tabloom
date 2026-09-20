@@ -105,6 +105,11 @@ function render(preservedScrollTop?: number): void {
   const duplicateLabels = new Map(duplicateKeys.map((key, index) => [key, index + 1]));
   const duplicates = duplicateKeys.length;
   const duplicateTabs = tabs.filter((tab) => tab.duplicateGroup).length;
+  const duplicateTabsToClose = duplicateKeys.flatMap((key) => {
+    const set = tabs.filter((tab) => tab.duplicateGroup === key);
+    const keeper = set.find((tab) => tab.pinned) ?? set.find((tab) => tab.active) ?? set[0];
+    return set.filter((tab) => tab.id !== keeper?.id);
+  });
   const windowNumber = activeWindowId === null ? null : browserWindows.findIndex((window) => window.id === activeWindowId) + 1;
   const normalizedSearch = searchQuery.trim().toLowerCase();
   const visibleWindows = normalizedSearch ? browserWindows.filter((window) => {
@@ -167,7 +172,7 @@ function render(preservedScrollTop?: number): void {
     <div class="search-box">${icon("search")}<input id="tab-search" type="search" value="${escapeHtml(searchQuery)}" placeholder="Search tabs, websites, or categories" aria-label="Search tabs">${searchQuery ? `<button id="clear-search" title="Clear search" aria-label="Clear search">${icon("x")}</button>` : ""}</div>
     <div class="category-bar"><nav>${filterHtml}</nav><button class="filter add-filter" id="add-category">${icon("plus")} Add category</button></div>
     ${addCategoryHtml}
-    <section class="inventory-head"><div><h2>${windowOverview ? "Open windows" : assignmentMode ? `Select tabs for ${escapeHtml(assignmentMode)}` : duplicateView ? "Duplicate sets" : windowNumber ? `Window ${windowNumber}` : activeFilter === "All" ? "All open tabs" : escapeHtml(activeFilter)}</h2><p>${windowOverview ? "Choose a window to see every tab inside it." : assignmentMode ? "Check the tabs that belong in this category." : duplicateView ? `${duplicateTabs} tabs across ${duplicates} likely duplicate sets. Remove only the extras you do not need.` : aiMessage ? escapeHtml(aiMessage) : "Choose what gets organized. Tabs close only when you use their trash button."}</p></div>${windowOverview || assignmentMode || duplicateView ? "" : activeFilter === "All" && activeWindowId === null ? `<div class="inventory-actions"><button id="improve-ai" class="ai-button" ${aiState === "working" ? "disabled" : ""}>${icon("sparkles")}${aiState === "working" ? "Improving…" : "Improve with on-device AI"}</button><button id="select-suggested" class="text-button">${icon("list")} Select suggested</button></div>` : activeFilter !== "All" ? `<button id="choose-tabs" class="text-button">${icon("list")} Select tabs</button>` : ""}</section>
+    <section class="inventory-head"><div><h2>${windowOverview ? "Open windows" : assignmentMode ? `Select tabs for ${escapeHtml(assignmentMode)}` : duplicateView ? "Duplicate sets" : windowNumber ? `Window ${windowNumber}` : activeFilter === "All" ? "All open tabs" : escapeHtml(activeFilter)}</h2><p>${windowOverview ? "Choose a window to see every tab inside it." : assignmentMode ? "Check the tabs that belong in this category." : duplicateView ? `${duplicateTabs} tabs across ${duplicates} likely duplicate sets. One tab from each set will be kept.` : aiMessage ? escapeHtml(aiMessage) : "Choose what gets organized. Tabs close only when you use their trash button."}</p></div>${duplicateView ? `<button id="close-duplicates" class="danger-button" ${duplicateTabsToClose.length ? "" : "disabled"}>${icon("trash")} Close duplicate tabs</button>` : windowOverview || assignmentMode ? "" : activeFilter === "All" && activeWindowId === null ? `<div class="inventory-actions"><button id="improve-ai" class="ai-button" ${aiState === "working" ? "disabled" : ""}>${icon("sparkles")}${aiState === "working" ? "Improving…" : "Improve with on-device AI"}</button><button id="select-suggested" class="text-button">${icon("list")} Select suggested</button></div>` : activeFilter !== "All" ? `<button id="choose-tabs" class="text-button">${icon("list")} Select tabs</button>` : ""}</section>
     <section class="tab-list ${windowOverview ? "window-list" : ""}">${windowOverview ? windowsHtml || `<div class="no-results">No windows match your search.</div>` : listHtml || `<div class="no-results">${searchQuery ? "No tabs match your search." : "No tabs in this category."}</div>`}</section>
     ${assignmentMode
       ? `<footer><div><strong>${tabs.filter((tab) => tab.category === assignmentMode).length}</strong> tabs in ${escapeHtml(assignmentMode)}</div><button id="done-assigning" class="primary">Done ${icon("check")}</button></footer>`
@@ -241,6 +246,30 @@ function render(preservedScrollTop?: number): void {
     selected.delete(tab.id);
     render();
   }));
+  document.querySelector("#close-duplicates")?.addEventListener("click", async () => {
+    const count = duplicateTabsToClose.length;
+    if (!count || !window.confirm(`Close ${count} duplicate ${count === 1 ? "tab" : "tabs"}?\n\nTabloom will keep one tab from every duplicate set. Closed tabs can be restored from Chrome’s recently closed tabs.`)) return;
+    const button = document.querySelector<HTMLButtonElement>("#close-duplicates");
+    if (button) {
+      button.disabled = true;
+      button.textContent = "Closing…";
+    }
+    const tabIds = duplicateTabsToClose.map((tab) => tab.id);
+    const response = await send<{ ok: boolean; error?: string }>({ type: "CLOSE_TABS", tabIds });
+    if (!response.ok) {
+      aiMessage = response.error ?? "Chrome could not close the duplicate tabs.";
+      render();
+      return;
+    }
+    const closedIds = new Set(tabIds);
+    analysis!.tabs = tabs.filter((tab) => !closedIds.has(tab.id));
+    selected = new Set([...selected].filter((id) => !closedIds.has(id)));
+    browserWindows = browserWindows.map((window) => ({
+      ...window,
+      tabCount: analysis!.tabs.filter((tab) => tab.windowId === window.id).length
+    }));
+    render();
+  });
   document.querySelectorAll<HTMLButtonElement>("[data-remove-category]").forEach((button) => button.addEventListener("click", async () => {
     const name = button.dataset.removeCategory;
     if (!name) return;

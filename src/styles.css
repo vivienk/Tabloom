@@ -74,6 +74,10 @@ nav { width: 100%; min-width: 0; display: flex; gap: 7px; overflow-x: auto; padd
 .ai-button .icon { width: 14px; height: 14px; }
 .ai-button:hover { background: #d9f8e7; }
 .ai-button:disabled { cursor: wait; opacity: .65; }
+.danger-button { display: inline-flex; align-items: center; gap: 6px; flex: none; border: 1px solid #dfb6ad; background: #fff5f2; color: #93493e; border-radius: 9px; padding: 7px 10px; font-size: 10px; font-weight: 750; white-space: nowrap; }
+.danger-button .icon { width: 14px; height: 14px; }
+.danger-button:hover, .danger-button:focus-visible { background: #f9e6e1; outline: none; }
+.danger-button:disabled { cursor: default; opacity: .5; }
 .tab-list { flex: 1; overflow-y: auto; border: 1px solid #dde0d8; background: #fbfcf8cc; border-radius: 14px; }
 .tab-row { height: 55px; display: grid; grid-template-columns: 25px 30px minmax(0, 1fr) 78px 82px 28px; gap: 8px; align-items: center; padding: 0 10px 0 12px; border-bottom: 1px solid #e6e8e2; }
 .tab-row:last-child { border: 0; }
