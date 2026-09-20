@@ -1,5 +1,6 @@
 import "./styles.css";
 import { createClassifier } from "./classifier";
+import { improveWithOnDeviceAI } from "./ai-classifier";
 import { CATEGORIES, type Analysis, type Category, type ClassifiedTab, type GroupColor, type Message, type TabInput } from "./types";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
@@ -30,6 +31,8 @@ let customCategories: CustomCategory[] = [];
 let categoryOverrides: Record<string, string> = {};
 let addingCategory = false;
 let assignmentMode: Category | null = null;
+let aiState: "idle" | "working" | "done" | "error" = "idle";
+let aiMessage = "";
 
 function send<T>(message: Message): Promise<T> {
   return chrome.runtime.sendMessage(message) as Promise<T>;
@@ -120,7 +123,7 @@ function render(): void {
     </section>
     <div class="category-bar"><nav>${filterHtml}</nav><button class="filter add-filter" id="add-category">+ Add category</button></div>
     ${addCategoryHtml}
-    <section class="inventory-head"><div><h2>${assignmentMode ? `Select tabs for ${escapeHtml(assignmentMode)}` : activeFilter === "All" ? "Preview" : escapeHtml(activeFilter)}</h2><p>${assignmentMode ? "Check the tabs that belong in this category." : "Choose what gets organized. Nothing will be closed."}</p></div>${assignmentMode ? "" : activeFilter === "All" ? `<button id="select-suggested" class="text-button">Select suggested</button>` : `<button id="choose-tabs" class="text-button">Select tabs</button>`}</section>
+    <section class="inventory-head"><div><h2>${assignmentMode ? `Select tabs for ${escapeHtml(assignmentMode)}` : activeFilter === "All" ? "Preview" : escapeHtml(activeFilter)}</h2><p>${assignmentMode ? "Check the tabs that belong in this category." : aiMessage ? escapeHtml(aiMessage) : "Choose what gets organized. Nothing will be closed."}</p></div>${assignmentMode ? "" : activeFilter === "All" ? `<div class="inventory-actions"><button id="improve-ai" class="ai-button" ${aiState === "working" ? "disabled" : ""}>${aiState === "working" ? "Improving…" : "✦ Improve with on-device AI"}</button><button id="select-suggested" class="text-button">Select suggested</button></div>` : `<button id="choose-tabs" class="text-button">Select tabs</button>`}</section>
     <section class="tab-list">${listHtml || `<div class="no-results">No tabs in this category.</div>`}</section>
     ${assignmentMode
       ? `<footer><div><strong>${tabs.filter((tab) => tab.category === assignmentMode).length}</strong> tabs in ${escapeHtml(assignmentMode)}</div><button id="done-assigning" class="primary">Done <span>✓</span></button></footer>`
@@ -223,8 +226,32 @@ function render(): void {
     selected = new Set(tabs.filter((tab) => tab.recommendation === "Group" && !tab.pinned).map((tab) => tab.id));
     render();
   });
+  document.querySelector("#improve-ai")?.addEventListener("click", improveWithAI);
   document.querySelector("#refresh")?.addEventListener("click", load);
   document.querySelector("#group")?.addEventListener("click", groupSelected);
+}
+
+async function improveWithAI(): Promise<void> {
+  if (!analysis || aiState === "working") return;
+  aiState = "working";
+  aiMessage = "Starting Chrome’s private on-device model…";
+  render();
+  try {
+    const protectedIds = new Set(analysis.tabs
+      .filter((tab) => Boolean(categoryOverrides[overrideKey(tab.url)]))
+      .map((tab) => tab.id));
+    const updated = await improveWithOnDeviceAI(analysis, allCategories(), protectedIds, (progress) => {
+      aiMessage = progress > 0 ? `Downloading the on-device model… ${Math.round(progress * 100)}%` : "Downloading the on-device model…";
+      render();
+    });
+    aiState = "done";
+    aiMessage = updated ? `On-device AI refined ${updated} tabs. Your manual choices were preserved.` : "Your tabs already match your saved choices.";
+    selected = new Set(analysis.tabs.filter((tab) => tab.recommendation === "Group" && !tab.pinned).map((tab) => tab.id));
+  } catch (error) {
+    aiState = "error";
+    aiMessage = error instanceof Error ? error.message : String(error);
+  }
+  render();
 }
 
 async function groupSelected(): Promise<void> {

@@ -10,6 +10,7 @@ Tabloom is a privacy-first Chrome extension that turns the tabs in your current 
 - Flags exact and tracking-parameter variants as likely duplicates
 - Supports removable custom categories with selectable tab-group colors and remembers category corrections for matching pages
 - Lets you open any category and select exactly which tabs belong under it
+- Optionally refines uncertain results with Chrome's private, on-device Prompt API
 - Preselects high-confidence grouping recommendations while leaving pinned tabs alone
 - Lets you review and approve Chrome tab groups
 - Keeps all tab metadata on-device

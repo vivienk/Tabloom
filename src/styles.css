@@ -51,6 +51,10 @@ nav { min-width: 0; flex: 1; display: flex; gap: 7px; overflow-x: auto; padding-
 .inventory-head h2 { font-size: 14px; margin: 0 0 3px; }
 .inventory-head p { margin: 0; color: #808984; font-size: 10px; }
 .text-button { border: 0; background: transparent; color: #286351; font-size: 11px; font-weight: 700; padding: 5px; }
+.inventory-actions { display: flex; align-items: center; gap: 8px; }
+.ai-button { border: 1px solid #95c9af; background: #e8fbf1; color: #235a47; border-radius: 9px; padding: 7px 10px; font-size: 10px; font-weight: 750; white-space: nowrap; }
+.ai-button:hover { background: #d9f8e7; }
+.ai-button:disabled { cursor: wait; opacity: .65; }
 .tab-list { flex: 1; overflow-y: auto; border: 1px solid #dde0d8; background: #fbfcf8cc; border-radius: 14px; }
 .tab-row { height: 55px; display: grid; grid-template-columns: 25px 30px minmax(0, 1fr) 78px 96px; gap: 9px; align-items: center; padding: 0 12px; border-bottom: 1px solid #e6e8e2; }
 .tab-row:last-child { border: 0; }
