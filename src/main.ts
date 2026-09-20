@@ -10,6 +10,7 @@ let analysis: Analysis | null = null;
 let selected = new Set<number>();
 let activeFilter: Category | "All" = "All";
 let duplicateView = false;
+let searchQuery = "";
 type CustomCategory = { name: string; color: GroupColor };
 
 const GROUP_COLORS: Array<{ name: GroupColor; hex: string }> = [
@@ -83,11 +84,14 @@ function renderError(message: string): void {
 }
 
 function visibleTabs(): ClassifiedTab[] {
-  if (assignmentMode) return analysis?.tabs ?? [];
-  if (duplicateView) return (analysis?.tabs ?? [])
+  let tabs: ClassifiedTab[];
+  if (assignmentMode) tabs = analysis?.tabs ?? [];
+  else if (duplicateView) tabs = (analysis?.tabs ?? [])
     .filter((tab) => Boolean(tab.duplicateGroup))
     .sort((left, right) => (left.duplicateGroup ?? "").localeCompare(right.duplicateGroup ?? ""));
-  return (analysis?.tabs ?? []).filter((tab) => activeFilter === "All" || tab.category === activeFilter);
+  else tabs = (analysis?.tabs ?? []).filter((tab) => activeFilter === "All" || tab.category === activeFilter);
+  const query = searchQuery.trim().toLowerCase();
+  return query ? tabs.filter((tab) => `${tab.title} ${tab.url} ${tab.category}`.toLowerCase().includes(query)) : tabs;
 }
 
 function render(): void {
@@ -139,10 +143,11 @@ function render(): void {
       <button id="show-duplicates" class="summary-card ${duplicateView ? "active" : ""}" ${duplicates ? "" : "disabled"}><strong>${duplicates}</strong><span>duplicate sets</span></button>
       <div class="privacy">${icon("shield")}<span>Local analysis</span></div>
     </section>
+    <div class="search-box">${icon("search")}<input id="tab-search" type="search" value="${escapeHtml(searchQuery)}" placeholder="Search tabs, websites, or categories" aria-label="Search tabs">${searchQuery ? `<button id="clear-search" title="Clear search" aria-label="Clear search">${icon("x")}</button>` : ""}</div>
     <div class="category-bar"><nav>${filterHtml}</nav><button class="filter add-filter" id="add-category">${icon("plus")} Add category</button></div>
     ${addCategoryHtml}
     <section class="inventory-head"><div><h2>${assignmentMode ? `Select tabs for ${escapeHtml(assignmentMode)}` : duplicateView ? "Duplicate sets" : activeFilter === "All" ? "Preview" : escapeHtml(activeFilter)}</h2><p>${assignmentMode ? "Check the tabs that belong in this category." : duplicateView ? `${duplicateTabs} tabs across ${duplicates} likely duplicate sets. Remove only the extras you do not need.` : aiMessage ? escapeHtml(aiMessage) : "Choose what gets organized. Tabs close only when you use their trash button."}</p></div>${assignmentMode || duplicateView ? "" : activeFilter === "All" ? `<div class="inventory-actions"><button id="improve-ai" class="ai-button" ${aiState === "working" ? "disabled" : ""}>${icon("sparkles")}${aiState === "working" ? "Improving…" : "Improve with on-device AI"}</button><button id="select-suggested" class="text-button">${icon("list")} Select suggested</button></div>` : `<button id="choose-tabs" class="text-button">${icon("list")} Select tabs</button>`}</section>
-    <section class="tab-list">${listHtml || `<div class="no-results">No tabs in this category.</div>`}</section>
+    <section class="tab-list">${listHtml || `<div class="no-results">${searchQuery ? "No tabs match your search." : "No tabs in this category."}</div>`}</section>
     ${assignmentMode
       ? `<footer><div><strong>${tabs.filter((tab) => tab.category === assignmentMode).length}</strong> tabs in ${escapeHtml(assignmentMode)}</div><button id="done-assigning" class="primary">Done ${icon("check")}</button></footer>`
       : `<footer><div><strong>${selected.size}</strong> tabs selected</div><button id="group" class="primary" ${selected.size ? "" : "disabled"}>Approve & group ${icon("arrowRight")}</button></footer>`}
@@ -154,6 +159,18 @@ function render(): void {
     assignmentMode = null;
     render();
   }));
+  document.querySelector<HTMLInputElement>("#tab-search")?.addEventListener("input", (event) => {
+    searchQuery = (event.currentTarget as HTMLInputElement).value;
+    render();
+    const search = document.querySelector<HTMLInputElement>("#tab-search");
+    search?.focus();
+    search?.setSelectionRange(search.value.length, search.value.length);
+  });
+  document.querySelector("#clear-search")?.addEventListener("click", () => {
+    searchQuery = "";
+    render();
+    document.querySelector<HTMLInputElement>("#tab-search")?.focus();
+  });
   document.querySelector("#show-duplicates")?.addEventListener("click", () => {
     duplicateView = true;
     assignmentMode = null;
