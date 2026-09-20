@@ -1,6 +1,7 @@
 import "./styles.css";
 import { createClassifier } from "./classifier";
 import { improveWithOnDeviceAI } from "./ai-classifier";
+import { icon } from "./icons";
 import { CATEGORIES, type Analysis, type Category, type ClassifiedTab, type GroupColor, type Message, type TabInput } from "./types";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
@@ -87,7 +88,7 @@ function render(): void {
     const count = category === "All" ? tabs.length : tabs.filter((tab) => tab.category === category).length;
     const filter = `<button class="filter ${activeFilter === category ? "active" : ""}" data-filter="${escapeHtml(category)}">${escapeHtml(category)}<span>${count}</span></button>`;
     return customNames.has(category)
-      ? `<div class="custom-filter">${filter}<button class="remove-filter" data-remove-category="${escapeHtml(category)}" title="Remove ${escapeHtml(category)}" aria-label="Remove ${escapeHtml(category)}">×</button></div>`
+      ? `<div class="custom-filter">${filter}<button class="remove-filter" data-remove-category="${escapeHtml(category)}" title="Remove ${escapeHtml(category)}" aria-label="Remove ${escapeHtml(category)}">${icon("x")}</button></div>`
       : filter;
   }).join("");
   const addCategoryHtml = addingCategory ? `<form class="category-form" id="category-form">
@@ -114,20 +115,20 @@ function render(): void {
     </article>`).join("");
 
   app.innerHTML = `<main class="shell">
-    <header><div><div class="eyebrow"><img class="mark small" src="/tabloom-logo.png" alt=""> TABLOOM</div><h1>Turn tab chaos<br>into clear groups.</h1></div><button id="refresh" class="icon-button" title="Analyze again">↻</button></header>
+    <header><div><div class="eyebrow"><img class="mark small" src="/tabloom-logo.png" alt=""> TABLOOM</div><h1>Turn tab chaos<br>into clear groups.</h1></div><button id="refresh" class="icon-button" title="Analyze again" aria-label="Analyze tabs again">${icon("refresh")}</button></header>
     <section class="summary">
       <div><strong>${tabs.length}</strong><span>open tabs</span></div>
       <div><strong>${usedCategories.length}</strong><span>suggested groups</span></div>
       <div><strong>${duplicates}</strong><span>duplicate sets</span></div>
-      <div class="privacy"><span>●</span> Local analysis</div>
+      <div class="privacy">${icon("shield")}<span>Local analysis</span></div>
     </section>
-    <div class="category-bar"><nav>${filterHtml}</nav><button class="filter add-filter" id="add-category">+ Add category</button></div>
+    <div class="category-bar"><nav>${filterHtml}</nav><button class="filter add-filter" id="add-category">${icon("plus")} Add category</button></div>
     ${addCategoryHtml}
-    <section class="inventory-head"><div><h2>${assignmentMode ? `Select tabs for ${escapeHtml(assignmentMode)}` : activeFilter === "All" ? "Preview" : escapeHtml(activeFilter)}</h2><p>${assignmentMode ? "Check the tabs that belong in this category." : aiMessage ? escapeHtml(aiMessage) : "Choose what gets organized. Nothing will be closed."}</p></div>${assignmentMode ? "" : activeFilter === "All" ? `<div class="inventory-actions"><button id="improve-ai" class="ai-button" ${aiState === "working" ? "disabled" : ""}>${aiState === "working" ? "Improving…" : "✦ Improve with on-device AI"}</button><button id="select-suggested" class="text-button">Select suggested</button></div>` : `<button id="choose-tabs" class="text-button">Select tabs</button>`}</section>
+    <section class="inventory-head"><div><h2>${assignmentMode ? `Select tabs for ${escapeHtml(assignmentMode)}` : activeFilter === "All" ? "Preview" : escapeHtml(activeFilter)}</h2><p>${assignmentMode ? "Check the tabs that belong in this category." : aiMessage ? escapeHtml(aiMessage) : "Choose what gets organized. Nothing will be closed."}</p></div>${assignmentMode ? "" : activeFilter === "All" ? `<div class="inventory-actions"><button id="improve-ai" class="ai-button" ${aiState === "working" ? "disabled" : ""}>${icon("sparkles")}${aiState === "working" ? "Improving…" : "Improve with on-device AI"}</button><button id="select-suggested" class="text-button">${icon("list")} Select suggested</button></div>` : `<button id="choose-tabs" class="text-button">${icon("list")} Select tabs</button>`}</section>
     <section class="tab-list">${listHtml || `<div class="no-results">No tabs in this category.</div>`}</section>
     ${assignmentMode
-      ? `<footer><div><strong>${tabs.filter((tab) => tab.category === assignmentMode).length}</strong> tabs in ${escapeHtml(assignmentMode)}</div><button id="done-assigning" class="primary">Done <span>✓</span></button></footer>`
-      : `<footer><div><strong>${selected.size}</strong> tabs selected</div><button id="group" class="primary" ${selected.size ? "" : "disabled"}>Approve & group <span>→</span></button></footer>`}
+      ? `<footer><div><strong>${tabs.filter((tab) => tab.category === assignmentMode).length}</strong> tabs in ${escapeHtml(assignmentMode)}</div><button id="done-assigning" class="primary">Done ${icon("check")}</button></footer>`
+      : `<footer><div><strong>${selected.size}</strong> tabs selected</div><button id="group" class="primary" ${selected.size ? "" : "disabled"}>Approve & group ${icon("arrowRight")}</button></footer>`}
   </main>`;
 
   document.querySelectorAll<HTMLButtonElement>("[data-filter]").forEach((button) => button.addEventListener("click", () => {
@@ -262,7 +263,7 @@ async function groupSelected(): Promise<void> {
   const groups = allCategories().map((category) => ({ category, color: colorForCategory(category), tabIds: analysis!.tabs.filter((tab) => selected.has(tab.id) && tab.category === category).map((tab) => tab.id) })).filter((group) => group.tabIds.length);
   const response = await send<{ ok: boolean; error?: string }>({ type: "GROUP_TABS", groups });
   if (!response.ok) return renderError(response.error ?? "Grouping failed");
-  app.innerHTML = `<main class="shell success"><div class="success-icon">✓</div><h1>Your tabs are organized.</h1><p>${selected.size} tabs were arranged into ${groups.length} color-coded groups. No tabs were closed.</p><button id="done" class="primary">Done</button></main>`;
+  app.innerHTML = `<main class="shell success"><div class="success-icon">${icon("checkCircle")}</div><h1>Your tabs are organized.</h1><p>${selected.size} tabs were arranged into ${groups.length} color-coded groups. No tabs were closed.</p><button id="done" class="primary">Done ${icon("check")}</button></main>`;
   document.querySelector("#done")?.addEventListener("click", () => window.close());
 }
 

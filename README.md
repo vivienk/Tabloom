@@ -56,3 +56,7 @@ Before adding a provider, preserve the current privacy defaults: ask for explici
 - `storage`: reserved for future on-device preferences
 
 Tabloom v1 does not request page-content access, browsing history, or permission to close tabs.
+
+## Interface icons
+
+Tabloom uses inline [Heroicons](https://heroicons.com/) under the MIT License. The SVGs are bundled directly, so the extension does not load an icon library or make network requests at runtime.
