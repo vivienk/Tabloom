@@ -44,4 +44,11 @@ chrome.runtime.onMessage.addListener((message: Message, _sender, sendResponse) =
       .catch((error: unknown) => sendResponse({ ok: false, error: String(error) }));
     return true;
   }
+
+  if (message.type === "CLOSE_TAB") {
+    chrome.tabs.remove(message.tabId)
+      .then(() => sendResponse({ ok: true }))
+      .catch((error: unknown) => sendResponse({ ok: false, error: String(error) }));
+    return true;
+  }
 });

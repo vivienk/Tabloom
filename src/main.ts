@@ -9,6 +9,7 @@ const classifier = createClassifier();
 let analysis: Analysis | null = null;
 let selected = new Set<number>();
 let activeFilter: Category | "All" = "All";
+let duplicateView = false;
 type CustomCategory = { name: string; color: GroupColor };
 
 const GROUP_COLORS: Array<{ name: GroupColor; hex: string }> = [
@@ -83,13 +84,19 @@ function renderError(message: string): void {
 
 function visibleTabs(): ClassifiedTab[] {
   if (assignmentMode) return analysis?.tabs ?? [];
+  if (duplicateView) return (analysis?.tabs ?? [])
+    .filter((tab) => Boolean(tab.duplicateGroup))
+    .sort((left, right) => (left.duplicateGroup ?? "").localeCompare(right.duplicateGroup ?? ""));
   return (analysis?.tabs ?? []).filter((tab) => activeFilter === "All" || tab.category === activeFilter);
 }
 
 function render(): void {
   if (!analysis) return;
   const tabs = analysis.tabs;
-  const duplicates = new Set(tabs.filter((tab) => tab.duplicateGroup).map((tab) => tab.duplicateGroup)).size;
+  const duplicateKeys = [...new Set(tabs.flatMap((tab) => tab.duplicateGroup ? [tab.duplicateGroup] : []))].sort();
+  const duplicateLabels = new Map(duplicateKeys.map((key, index) => [key, index + 1]));
+  const duplicates = duplicateKeys.length;
+  const duplicateTabs = tabs.filter((tab) => tab.duplicateGroup).length;
   const categories = allCategories();
   const customNames = new Set(customCategories.map((category) => category.name));
   const usedCategories = categories.filter((category) => customNames.has(category) || tabs.some((tab) => tab.category === category));
@@ -120,7 +127,8 @@ function render(): void {
       <select class="category-select" data-category-id="${tab.id}" aria-label="Category for ${escapeHtml(tab.title)}">
         ${categories.map((category) => `<option value="${escapeHtml(category)}" ${tab.category === category ? "selected" : ""}>${escapeHtml(category)}</option>`).join("")}
       </select>
-      <div class="action ${tab.duplicateGroup ? "warn" : ""}">${tab.duplicateGroup ? "Likely duplicate" : tab.recommendation}</div>
+      <div class="action ${tab.duplicateGroup ? "warn" : ""}">${tab.duplicateGroup ? `Duplicate set ${duplicateLabels.get(tab.duplicateGroup)}` : tab.recommendation}</div>
+      <button class="trash-button" data-close-tab="${tab.id}" title="Close ${escapeHtml(tab.title)}" aria-label="Close ${escapeHtml(tab.title)}">${icon("trash")}</button>
     </article>`).join("");
 
   app.innerHTML = `<main class="shell">
@@ -128,12 +136,12 @@ function render(): void {
     <section class="summary">
       <div><strong>${tabs.length}</strong><span>open tabs</span></div>
       <div><strong>${usedCategories.length}</strong><span>suggested groups</span></div>
-      <div><strong>${duplicates}</strong><span>duplicate sets</span></div>
+      <button id="show-duplicates" class="summary-card ${duplicateView ? "active" : ""}" ${duplicates ? "" : "disabled"}><strong>${duplicates}</strong><span>duplicate sets</span></button>
       <div class="privacy">${icon("shield")}<span>Local analysis</span></div>
     </section>
     <div class="category-bar"><nav>${filterHtml}</nav><button class="filter add-filter" id="add-category">${icon("plus")} Add category</button></div>
     ${addCategoryHtml}
-    <section class="inventory-head"><div><h2>${assignmentMode ? `Select tabs for ${escapeHtml(assignmentMode)}` : activeFilter === "All" ? "Preview" : escapeHtml(activeFilter)}</h2><p>${assignmentMode ? "Check the tabs that belong in this category." : aiMessage ? escapeHtml(aiMessage) : "Choose what gets organized. Nothing will be closed."}</p></div>${assignmentMode ? "" : activeFilter === "All" ? `<div class="inventory-actions"><button id="improve-ai" class="ai-button" ${aiState === "working" ? "disabled" : ""}>${icon("sparkles")}${aiState === "working" ? "Improving…" : "Improve with on-device AI"}</button><button id="select-suggested" class="text-button">${icon("list")} Select suggested</button></div>` : `<button id="choose-tabs" class="text-button">${icon("list")} Select tabs</button>`}</section>
+    <section class="inventory-head"><div><h2>${assignmentMode ? `Select tabs for ${escapeHtml(assignmentMode)}` : duplicateView ? "Duplicate sets" : activeFilter === "All" ? "Preview" : escapeHtml(activeFilter)}</h2><p>${assignmentMode ? "Check the tabs that belong in this category." : duplicateView ? `${duplicateTabs} tabs across ${duplicates} likely duplicate sets. Remove only the extras you do not need.` : aiMessage ? escapeHtml(aiMessage) : "Choose what gets organized. Tabs close only when you use their trash button."}</p></div>${assignmentMode || duplicateView ? "" : activeFilter === "All" ? `<div class="inventory-actions"><button id="improve-ai" class="ai-button" ${aiState === "working" ? "disabled" : ""}>${icon("sparkles")}${aiState === "working" ? "Improving…" : "Improve with on-device AI"}</button><button id="select-suggested" class="text-button">${icon("list")} Select suggested</button></div>` : `<button id="choose-tabs" class="text-button">${icon("list")} Select tabs</button>`}</section>
     <section class="tab-list">${listHtml || `<div class="no-results">No tabs in this category.</div>`}</section>
     ${assignmentMode
       ? `<footer><div><strong>${tabs.filter((tab) => tab.category === assignmentMode).length}</strong> tabs in ${escapeHtml(assignmentMode)}</div><button id="done-assigning" class="primary">Done ${icon("check")}</button></footer>`
@@ -142,7 +150,27 @@ function render(): void {
 
   document.querySelectorAll<HTMLButtonElement>("[data-filter]").forEach((button) => button.addEventListener("click", () => {
     activeFilter = button.dataset.filter as Category | "All";
+    duplicateView = false;
     assignmentMode = null;
+    render();
+  }));
+  document.querySelector("#show-duplicates")?.addEventListener("click", () => {
+    duplicateView = true;
+    assignmentMode = null;
+    render();
+  });
+  document.querySelectorAll<HTMLButtonElement>("[data-close-tab]").forEach((button) => button.addEventListener("click", async () => {
+    const tab = tabs.find((item) => item.id === Number(button.dataset.closeTab));
+    if (!tab || !window.confirm(`Close “${tab.title}”?\n\nYou can restore it from Chrome’s recently closed tabs.`)) return;
+    button.disabled = true;
+    const response = await send<{ ok: boolean; error?: string }>({ type: "CLOSE_TAB", tabId: tab.id });
+    if (!response.ok) {
+      aiMessage = response.error ?? "Chrome could not close that tab.";
+      render();
+      return;
+    }
+    analysis!.tabs = tabs.filter((item) => item.id !== tab.id);
+    selected.delete(tab.id);
     render();
   }));
   document.querySelectorAll<HTMLButtonElement>("[data-remove-category]").forEach((button) => button.addEventListener("click", async () => {

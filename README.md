@@ -1,6 +1,6 @@
 # Tabloom
 
-Tabloom is a privacy-first Chrome extension that turns the tabs in your current window into a reviewable, color-coded organization plan. The MVP uses deterministic local rules, requires no account or API key, and never closes tabs.
+Tabloom is a privacy-first Chrome extension that turns the tabs in your current window into a reviewable, color-coded organization plan. The MVP uses deterministic local rules, requires no account or API key, and closes a tab only when you explicitly confirm its trash button.
 
 ## What it does
 
@@ -8,6 +8,7 @@ Tabloom is a privacy-first Chrome extension that turns the tabs in your current 
 - Shows a compact inventory with titles, sites, and favicons
 - Classifies tabs into Work, Research, Learning, Shopping, Social, Personal, or Inbox
 - Flags exact and tracking-parameter variants as likely duplicates
+- Opens a dedicated duplicate-sets view and lets you explicitly remove unwanted tabs
 - Supports removable custom categories with selectable tab-group colors and remembers category corrections for matching pages
 - Lets you open any category and select exactly which tabs belong under it
 - Optionally refines uncertain results with Chrome's private, on-device Prompt API
@@ -55,7 +56,7 @@ Before adding a provider, preserve the current privacy defaults: ask for explici
 - `tabGroups`: name and color the approved groups
 - `storage`: reserved for future on-device preferences
 
-Tabloom v1 does not request page-content access, browsing history, or permission to close tabs.
+Tabloom v1 does not request page-content access or browsing history. Tab removal happens only after you click a tab’s trash button and confirm it.
 
 ## Interface icons
 
