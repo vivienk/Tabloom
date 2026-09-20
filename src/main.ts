@@ -173,7 +173,7 @@ function render(preservedScrollTop?: number): void {
     <section class="summary">
       <button id="show-all-tabs" class="summary-card ${!windowOverview && activeWindowId === null && !duplicateView && activeFilter === "All" ? "active" : ""}"><strong>${tabs.length}</strong><span>open tabs</span></button>
       <button id="show-windows" class="summary-card ${windowOverview || activeWindowId !== null ? "active" : ""}"><strong>${browserWindows.length}</strong><span>${browserWindows.length === 1 ? "window" : "windows"} open</span></button>
-      <button id="show-duplicates" class="summary-card ${duplicateView ? "active" : ""}" ${duplicates ? "" : "disabled"}><strong>${duplicates}</strong><span>duplicate sets</span></button>
+      <button id="show-duplicates" class="summary-card ${duplicateView ? "active" : ""}"><strong>${duplicates}</strong><span>duplicate sets</span></button>
       <div class="privacy">${icon("shield")}<span>Local analysis</span></div>
     </section>
     <div class="search-box">${icon("search")}<input id="tab-search" type="search" value="${escapeHtml(searchQuery)}" placeholder="Search tabs, websites, or categories" aria-label="Search tabs">${searchQuery ? `<button id="clear-search" title="Clear search" aria-label="Clear search">${icon("x")}</button>` : ""}</div>
