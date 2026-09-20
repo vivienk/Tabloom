@@ -147,7 +147,7 @@ function render(preservedScrollTop?: number): void {
     <div class="category-form-actions"><button class="mini-primary" type="submit">Add</button><button class="mini-cancel" id="cancel-category" type="button">Cancel</button></div>
   </form>` : "";
   const listHtml = visibleTabs().map((tab) => `
-    <article class="tab-row ${tab.duplicateGroup ? "duplicate" : ""}">
+    <article class="tab-row ${tab.duplicateGroup ? "duplicate" : ""}" data-open-tab="${tab.id}" data-window-id="${tab.windowId}" title="Double-click to open this tab">
       <label class="check" title="${assignmentMode ? `Assign to ${escapeHtml(assignmentMode)}` : "Include when grouping"}"><input type="checkbox" ${assignmentMode ? `data-assign-id="${tab.id}" ${tab.category === assignmentMode ? "checked" : ""}` : `data-id="${tab.id}" ${selected.has(tab.id) ? "checked" : ""}`}><span></span></label>
       <div class="favicon">${tab.favIconUrl ? `<img src="${escapeHtml(tab.favIconUrl)}" alt="">` : hostname(tab.url).slice(0, 1).toUpperCase()}</div>
       <div class="tab-copy"><h3>${escapeHtml(tab.title)}</h3><p>${escapeHtml(hostname(tab.url))}</p></div>
@@ -169,7 +169,7 @@ function render(preservedScrollTop?: number): void {
   </article>`).join("");
 
   app.innerHTML = `<main class="shell">
-    <header><div><div class="eyebrow"><img class="mark small" src="/tabloom-logo.png" alt=""> TABLOOM</div><h1>Turn tab chaos<br>into clear groups.</h1></div><button id="refresh" class="icon-button" title="Analyze again" aria-label="Analyze tabs again">${icon("refresh")}</button></header>
+    <header><h1>Turn tab chaos into clear groups.</h1><div class="header-actions"><img class="mark small" src="/tabloom-logo.png" alt="Tabloom"><button id="refresh" class="icon-button" title="Analyze again" aria-label="Analyze tabs again">${icon("refresh")}</button></div></header>
     <section class="summary">
       <button id="show-all-tabs" class="summary-card ${!windowOverview && activeWindowId === null && !duplicateView && activeFilter === "All" ? "active" : ""}"><strong>${tabs.length}</strong><span>open tabs</span></button>
       <button id="show-windows" class="summary-card ${windowOverview || activeWindowId !== null ? "active" : ""}"><strong>${browserWindows.length}</strong><span>${browserWindows.length === 1 ? "window" : "windows"} open</span></button>
@@ -179,7 +179,7 @@ function render(preservedScrollTop?: number): void {
     <div class="search-box">${icon("search")}<input id="tab-search" type="search" value="${escapeHtml(searchQuery)}" placeholder="Search tabs, websites, or categories" aria-label="Search tabs">${searchQuery ? `<button id="clear-search" title="Clear search" aria-label="Clear search">${icon("x")}</button>` : ""}</div>
     <div class="category-bar"><nav>${filterHtml}</nav><button class="filter add-filter" id="add-category">${icon("plus")} Add category</button></div>
     ${addCategoryHtml}
-    <section class="inventory-head"><div><h2>${historyView ? "Recently closed tabs" : windowOverview ? "Open windows" : assignmentMode ? `Select tabs for ${escapeHtml(assignmentMode)}` : duplicateView ? "Duplicate sets" : windowNumber ? `Window ${windowNumber}` : activeFilter === "All" ? "All open tabs" : escapeHtml(activeFilter)}</h2><p>${historyView ? "Restore a tab you closed recently." : windowOverview ? "Choose a window to see every tab inside it." : assignmentMode ? "Check the tabs that belong in this category." : duplicateView ? `${duplicateTabs} tabs across ${duplicates} likely duplicate sets. Only extra copies will close; one tab per set stays open.` : aiMessage ? escapeHtml(aiMessage) : "Choose what gets organized. Tabs close only when you use their trash button."}</p></div>${historyView ? `<button id="back-to-duplicates" class="text-button">${icon("arrowRight")} Back to duplicates</button>` : duplicateView ? `<div class="duplicate-actions"><button id="close-duplicates" class="danger-button" ${duplicateTabsToClose.length ? "" : "disabled"}>${icon("trash")} Close extra duplicates</button><button id="show-history" class="history-button">${icon("clock")} Recently closed tabs</button></div>` : windowOverview || assignmentMode ? "" : activeFilter === "All" && activeWindowId === null ? `<div class="inventory-actions"><button id="improve-ai" class="ai-button" ${aiState === "working" ? "disabled" : ""}>${icon("sparkles")}${aiState === "working" ? "Improving…" : "Improve with on-device AI"}</button><button id="select-suggested" class="text-button">${icon("list")} Select suggested</button></div>` : activeFilter !== "All" ? `<button id="choose-tabs" class="text-button">${icon("list")} Select tabs</button>` : ""}</section>
+    <section class="inventory-head"><div><h2>${historyView ? "Recently closed tabs" : windowOverview ? "Open windows" : assignmentMode ? `Select tabs for ${escapeHtml(assignmentMode)}` : duplicateView ? "Duplicate sets" : windowNumber ? `Window ${windowNumber}` : activeFilter === "All" ? "All open tabs" : escapeHtml(activeFilter)}</h2>${historyView ? "<p>Restore a tab you closed recently.</p>" : windowOverview ? "<p>Choose a window to see every tab inside it.</p>" : assignmentMode ? "<p>Check the tabs that belong in this category.</p>" : duplicateView ? `<p>${duplicateTabs} tabs across ${duplicates} likely duplicate sets. Only extra copies will close; one tab per set stays open.</p>` : aiMessage ? `<p>${escapeHtml(aiMessage)}</p>` : ""}</div>${historyView ? `<button id="back-to-duplicates" class="text-button">${icon("arrowRight")} Back to duplicates</button>` : duplicateView ? `<div class="duplicate-actions"><button id="close-duplicates" class="danger-button" ${duplicateTabsToClose.length ? "" : "disabled"}>${icon("trash")} Close extra duplicates</button><button id="show-history" class="history-button">${icon("clock")} Recently closed tabs</button></div>` : windowOverview || assignmentMode ? "" : activeFilter === "All" && activeWindowId === null ? `<div class="inventory-actions"><button id="improve-ai" class="ai-button" ${aiState === "working" ? "disabled" : ""}>${icon("sparkles")}${aiState === "working" ? "Improving…" : "Improve with on-device AI"}</button></div>` : activeFilter !== "All" ? `<button id="choose-tabs" class="text-button">${icon("list")} Select tabs</button>` : ""}</section>
     <section class="tab-list ${windowOverview ? "window-list" : ""}">${historyView ? historyHtml || `<div class="no-results">No recently closed tabs.</div>` : windowOverview ? windowsHtml || `<div class="no-results">No windows match your search.</div>` : listHtml || `<div class="no-results">${searchQuery ? "No tabs match your search." : "No tabs in this category."}</div>`}</section>
     ${historyView
       ? `<footer><div><strong>${recentlyClosed.length}</strong> recently closed tabs</div></footer>`
@@ -288,6 +288,16 @@ function render(preservedScrollTop?: number): void {
     analysis!.tabs = tabs.filter((item) => item.id !== tab.id);
     selected.delete(tab.id);
     render();
+  }));
+  document.querySelectorAll<HTMLElement>("[data-open-tab]").forEach((row) => row.addEventListener("dblclick", async (event) => {
+    if ((event.target as HTMLElement).closest("button, input, select, label")) return;
+    const tabId = Number(row.dataset.openTab);
+    const windowId = Number(row.dataset.windowId);
+    const response = await send<{ ok: boolean; error?: string }>({ type: "ACTIVATE_TAB", tabId, windowId });
+    if (!response.ok) {
+      aiMessage = response.error ?? "Chrome could not open that tab.";
+      render();
+    }
   }));
   document.querySelector("#close-duplicates")?.addEventListener("click", async () => {
     const count = duplicateTabsToClose.length;
@@ -400,10 +410,6 @@ function render(preservedScrollTop?: number): void {
   });
   document.querySelector("#done-assigning")?.addEventListener("click", () => {
     assignmentMode = null;
-    render();
-  });
-  document.querySelector("#select-suggested")?.addEventListener("click", () => {
-    selected = new Set(tabs.filter((tab) => tab.recommendation === "Group" && !tab.pinned).map((tab) => tab.id));
     render();
   });
   document.querySelector("#improve-ai")?.addEventListener("click", improveWithAI);

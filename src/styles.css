@@ -5,11 +5,12 @@ button, input { font: inherit; }
 button { cursor: pointer; }
 .icon { width: 16px; height: 16px; display: block; flex: none; }
 .shell { width: 760px; height: 580px; display: flex; flex-direction: column; padding: 26px 30px 0; }
-header { display: flex; justify-content: space-between; align-items: flex-start; }
+header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.header-actions { display: flex; align-items: center; gap: 8px; }
 .eyebrow { display: flex; gap: 9px; align-items: center; color: #51615b; font-size: 11px; font-weight: 800; letter-spacing: .14em; }
 .mark { width: 52px; height: 52px; border-radius: 14px; display: block; object-fit: contain; filter: drop-shadow(0 8px 12px #173f3530); }
 .mark.small { width: 27px; height: 27px; border-radius: 8px; filter: none; }
-h1 { margin: 10px 0 18px; font: 500 31px/1.02 Georgia, "Times New Roman", serif; letter-spacing: -.025em; }
+h1 { margin: 0; font: 500 28px/1.05 Georgia, "Times New Roman", serif; letter-spacing: -.025em; white-space: nowrap; }
 .icon-button { display: grid; place-items: center; border: 1px solid #d8dcd3; background: #ffffffa8; width: 36px; height: 36px; border-radius: 11px; color: #52605b; }
 .icon-button .icon { width: 18px; height: 18px; }
 .summary { display: grid; grid-template-columns: 1fr 1fr 1fr 1.4fr; background: #173f35; color: white; border-radius: 16px; padding: 15px 18px; box-shadow: 0 12px 28px #173f3524; }

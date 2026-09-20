@@ -98,4 +98,13 @@ chrome.runtime.onMessage.addListener((message: Message, _sender, sendResponse) =
       .catch((error: unknown) => sendResponse({ ok: false, error: String(error) }));
     return true;
   }
+
+  if (message.type === "ACTIVATE_TAB") {
+    Promise.all([
+      chrome.windows.update(message.windowId, { focused: true }),
+      chrome.tabs.update(message.tabId, { active: true })
+    ]).then(() => sendResponse({ ok: true }))
+      .catch((error: unknown) => sendResponse({ ok: false, error: String(error) }));
+    return true;
+  }
 });

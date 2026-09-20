@@ -50,4 +50,5 @@ export type Message =
   | { type: "CLOSE_TABS"; tabIds: number[] }
   | { type: "GET_RECENTLY_CLOSED" }
   | { type: "RESTORE_TAB"; sessionId: string }
+  | { type: "ACTIVATE_TAB"; tabId: number; windowId: number }
   | { type: "GROUP_TABS"; groups: Array<{ category: Category; color: GroupColor; tabIds: number[] }> };

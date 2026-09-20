@@ -7,6 +7,7 @@ Tabloom is a privacy-first Chrome extension that turns the tabs in your current 
 - Reads open tabs across every normal window in the current Chrome profile
 - Shows a clickable inventory of Chrome windows in the current profile
 - Shows a compact inventory with titles, sites, and favicons
+- Opens the actual Chrome tab when an inventory row is double-clicked
 - Searches tabs by title, website address, or category
 - Sorts categories from most tabs to least and keeps selection position stable
 - Classifies tabs into Work, Research, Learning, Shopping, Social, Personal, or Inbox
