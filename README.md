@@ -5,6 +5,7 @@ Tabloom is a privacy-first Chrome extension that turns the tabs in your current 
 ## What it does
 
 - Reads the open tabs in the current Chrome window
+- Shows how many Chrome windows are open in the current profile
 - Shows a compact inventory with titles, sites, and favicons
 - Searches tabs by title, website address, or category
 - Classifies tabs into Work, Research, Learning, Shopping, Social, Personal, or Inbox

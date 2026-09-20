@@ -2,11 +2,12 @@ import "./styles.css";
 import { createClassifier } from "./classifier";
 import { improveWithOnDeviceAI } from "./ai-classifier";
 import { icon } from "./icons";
-import { CATEGORIES, type Analysis, type Category, type ClassifiedTab, type GroupColor, type Message, type TabInput } from "./types";
+import { CATEGORIES, type Analysis, type Category, type ClassifiedTab, type GroupColor, type Message, type TabInventory } from "./types";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 const classifier = createClassifier();
 let analysis: Analysis | null = null;
+let windowCount = 1;
 let selected = new Set<number>();
 let activeFilter: Category | "All" = "All";
 let duplicateView = false;
@@ -139,7 +140,7 @@ function render(): void {
     <header><div><div class="eyebrow"><img class="mark small" src="/tabloom-logo.png" alt=""> TABLOOM</div><h1>Turn tab chaos<br>into clear groups.</h1></div><button id="refresh" class="icon-button" title="Analyze again" aria-label="Analyze tabs again">${icon("refresh")}</button></header>
     <section class="summary">
       <div><strong>${tabs.length}</strong><span>open tabs</span></div>
-      <div><strong>${usedCategories.length}</strong><span>suggested groups</span></div>
+      <div><strong>${windowCount}</strong><span>${windowCount === 1 ? "window" : "windows"} open</span></div>
       <button id="show-duplicates" class="summary-card ${duplicateView ? "active" : ""}" ${duplicates ? "" : "disabled"}><strong>${duplicates}</strong><span>duplicate sets</span></button>
       <div class="privacy">${icon("shield")}<span>Local analysis</span></div>
     </section>
@@ -334,8 +335,9 @@ async function load(): Promise<void> {
       return [];
     }) : [];
     categoryOverrides = saved.categoryOverrides && typeof saved.categoryOverrides === "object" ? saved.categoryOverrides as Record<string, string> : {};
-    const response = await send<{ ok: boolean; tabs?: TabInput[]; error?: string }>({ type: "GET_TABS" });
+    const response = await send<{ ok: boolean; tabs?: TabInventory["tabs"]; windowCount?: number; error?: string }>({ type: "GET_TABS" });
     if (!response.ok || !response.tabs) throw new Error(response.error ?? "Tab inventory unavailable");
+    windowCount = response.windowCount ?? 1;
     analysis = await classifier.classify(response.tabs);
     for (const tab of analysis.tabs) {
       const override = categoryOverrides[overrideKey(tab.url)];

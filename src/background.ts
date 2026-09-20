@@ -12,7 +12,10 @@ const COLORS: Record<string, chrome.tabGroups.ColorEnum> = {
 
 chrome.runtime.onMessage.addListener((message: Message, _sender, sendResponse) => {
   if (message.type === "GET_TABS") {
-    chrome.tabs.query({ currentWindow: true }).then((tabs) => {
+    Promise.all([
+      chrome.tabs.query({ currentWindow: true }),
+      chrome.windows.getAll({ windowTypes: ["normal"] })
+    ]).then(([tabs, windows]) => {
       const inventory: TabInput[] = tabs
         .filter((tab): tab is chrome.tabs.Tab & { id: number; windowId: number } => tab.id !== undefined && tab.windowId !== undefined)
         .filter((tab) => !tab.url?.startsWith("chrome://") && !tab.url?.startsWith("chrome-extension://"))
@@ -25,7 +28,7 @@ chrome.runtime.onMessage.addListener((message: Message, _sender, sendResponse) =
           pinned: Boolean(tab.pinned),
           active: Boolean(tab.active)
         }));
-      sendResponse({ ok: true, tabs: inventory });
+      sendResponse({ ok: true, tabs: inventory, windowCount: windows.length });
     }).catch((error: unknown) => sendResponse({ ok: false, error: String(error) }));
     return true;
   }

@@ -12,6 +12,11 @@ export type TabInput = {
   active: boolean;
 };
 
+export type TabInventory = {
+  tabs: TabInput[];
+  windowCount: number;
+};
+
 export type Recommendation = "Group" | "Review duplicate" | "Keep ungrouped";
 
 export type ClassifiedTab = TabInput & {
