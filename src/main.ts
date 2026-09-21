@@ -367,7 +367,6 @@ function render(preservedScrollTop?: number): void {
     render(scrollTop);
   }));
   document.querySelectorAll<HTMLSelectElement>("[data-category-id]").forEach((select) => select.addEventListener("change", async () => {
-    const scrollTop = document.querySelector<HTMLElement>(".tab-list")?.scrollTop;
     const tab = tabs.find((item) => item.id === Number(select.dataset.categoryId));
     if (!tab) return;
     tab.category = select.value;
@@ -375,7 +374,15 @@ function render(preservedScrollTop?: number): void {
     categoryOverrides[overrideKey(tab.url)] = select.value;
     selected.add(tab.id);
     await chrome.storage.local.set({ categoryOverrides });
-    render(scrollTop);
+    const row = select.closest(".tab-row");
+    const checkbox = row?.querySelector<HTMLInputElement>("[data-id]");
+    if (checkbox) checkbox.checked = true;
+    const assignmentCheckbox = row?.querySelector<HTMLInputElement>("[data-assign-id]");
+    if (assignmentCheckbox) assignmentCheckbox.checked = tab.category === assignmentMode;
+    const selectedCount = document.querySelector<HTMLElement>("footer div strong");
+    if (selectedCount) selectedCount.textContent = String(assignmentMode ? tabs.filter((item) => item.category === assignmentMode).length : selected.size);
+    const groupButton = document.querySelector<HTMLButtonElement>("#group");
+    if (groupButton) groupButton.disabled = false;
   }));
   document.querySelector("#add-category")?.addEventListener("click", () => {
     addingCategory = true;
