@@ -367,6 +367,7 @@ function render(preservedScrollTop?: number): void {
     render(scrollTop);
   }));
   document.querySelectorAll<HTMLSelectElement>("[data-category-id]").forEach((select) => select.addEventListener("change", async () => {
+    const scrollTop = document.querySelector<HTMLElement>(".tab-list")?.scrollTop;
     const tab = tabs.find((item) => item.id === Number(select.dataset.categoryId));
     if (!tab) return;
     tab.category = select.value;
@@ -374,7 +375,7 @@ function render(preservedScrollTop?: number): void {
     categoryOverrides[overrideKey(tab.url)] = select.value;
     selected.add(tab.id);
     await chrome.storage.local.set({ categoryOverrides });
-    render();
+    render(scrollTop);
   }));
   document.querySelector("#add-category")?.addEventListener("click", () => {
     addingCategory = true;
