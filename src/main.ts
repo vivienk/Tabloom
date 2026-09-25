@@ -326,6 +326,12 @@ function render(preservedScrollTop?: number): void {
   document.querySelectorAll<HTMLButtonElement>("[data-remove-category]").forEach((button) => button.addEventListener("click", async () => {
     const name = button.dataset.removeCategory;
     if (!name) return;
+    const ungrouped = await send<{ ok: boolean; error?: string }>({ type: "UNGROUP_CATEGORY", category: name });
+    if (!ungrouped.ok) {
+      aiMessage = ungrouped.error ?? "Chrome could not remove this tab group.";
+      render();
+      return;
+    }
     customCategories = customCategories.filter((category) => category.name !== name);
     for (const tab of tabs) {
       if (tab.category === name) {

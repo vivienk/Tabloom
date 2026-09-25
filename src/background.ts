@@ -43,15 +43,41 @@ chrome.runtime.onMessage.addListener((message: Message, _sender, sendResponse) =
 
   if (message.type === "GROUP_TABS") {
     (async () => {
-      const created: string[] = [];
+      const organized: string[] = [];
       for (const group of message.groups) {
         if (!group.tabIds.length) continue;
-        const groupId = await chrome.tabs.group({ tabIds: group.tabIds });
+        const firstTab = await chrome.tabs.get(group.tabIds[0]);
+        const matchingGroups = (await chrome.tabGroups.query({ windowId: firstTab.windowId }))
+          .filter((existing) => existing.title?.trim().toLowerCase() === group.category.trim().toLowerCase());
+        const keeper = matchingGroups[0];
+        const groupId = keeper
+          ? await chrome.tabs.group({ groupId: keeper.id, tabIds: group.tabIds })
+          : await chrome.tabs.group({ tabIds: group.tabIds });
+
+        for (const duplicate of matchingGroups.slice(1)) {
+          const duplicateTabs = await chrome.tabs.query({ groupId: duplicate.id });
+          const duplicateTabIds = duplicateTabs.flatMap((tab) => tab.id === undefined ? [] : [tab.id]);
+          if (duplicateTabIds.length) await chrome.tabs.group({ groupId, tabIds: duplicateTabIds });
+        }
         await chrome.tabGroups.update(groupId, { title: group.category, color: group.color ?? COLORS[group.category] ?? "grey", collapsed: false });
-        created.push(group.category);
+        organized.push(group.category);
       }
-      return created;
-    })().then((created) => sendResponse({ ok: true, created }))
+      return organized;
+    })().then((organized) => sendResponse({ ok: true, organized }))
+      .catch((error: unknown) => sendResponse({ ok: false, error: String(error) }));
+    return true;
+  }
+
+  if (message.type === "UNGROUP_CATEGORY") {
+    (async () => {
+      const matchingGroups = (await chrome.tabGroups.query({}))
+        .filter((group) => group.title?.trim().toLowerCase() === message.category.trim().toLowerCase());
+      const tabIds = (await Promise.all(matchingGroups.map((group) => chrome.tabs.query({ groupId: group.id }))))
+        .flat()
+        .flatMap((tab) => tab.id === undefined ? [] : [tab.id]);
+      if (tabIds.length) await chrome.tabs.ungroup(tabIds);
+      return matchingGroups.length;
+    })().then((removed) => sendResponse({ ok: true, removed }))
       .catch((error: unknown) => sendResponse({ ok: false, error: String(error) }));
     return true;
   }
