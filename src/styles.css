@@ -99,8 +99,15 @@ nav { width: 100%; min-width: 0; display: flex; gap: 7px; overflow-x: auto; padd
 .tab-copy { min-width: 0; }
 .tab-copy h3 { margin: 0 0 3px; font-size: 11px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tab-copy p { margin: 0; color: #8b938f; font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.category-select { width: 78px; border: 1px solid #d5dbd3; border-radius: 8px; padding: 4px 5px; background: #eef2ec; color: #466258; font-size: 9px; font-weight: 700; outline: none; }
-.category-select:focus { border-color: #4b806f; }
+.category-select { width: 78px; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 3px; border: 1px solid #d5dbd3; border-radius: 8px; padding: 5px 6px; background: #eef2ec; color: #466258; font-size: 9px; font-weight: 700; outline: none; text-align: left; }
+.category-select:hover, .category-select:focus, .category-select[aria-expanded="true"] { border-color: #4b806f; background: #e6eee8; }
+.category-select .category-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.category-select .icon { width: 10px; height: 10px; flex: 0 0 auto; }
+.category-popover { position: fixed; z-index: 1000; width: 142px; max-height: 232px; overflow-y: auto; padding: 5px; border: 1px solid #d5dbd3; border-radius: 10px; background: #fff; box-shadow: 0 12px 32px #27372f30; }
+.category-popover button { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; border: 0; border-radius: 7px; padding: 7px 8px; background: transparent; color: #3d4d47; font-size: 10px; font-weight: 650; text-align: left; }
+.category-popover button:hover, .category-popover button:focus-visible { background: #eef4ef; outline: none; }
+.category-popover button.active { background: #e3f7ec; color: #245b49; }
+.category-popover button .icon { width: 12px; height: 12px; flex: 0 0 auto; }
 .tag-research { background: #eee9f4; color: #6b5780; } .tag-learning { background: #e4eff1; color: #486e75; } .tag-shopping { background: #f5eadc; color: #89653f; } .tag-social { background: #f3e6eb; color: #81586a; } .tag-personal { background: #e8efe2; color: #587344; } .tag-inbox { background: #ececea; color: #74746e; }
 .action { font-size: 9px; color: #79827e; }
 .action.warn { color: #a46735; font-weight: 700; }

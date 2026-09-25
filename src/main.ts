@@ -151,9 +151,9 @@ function render(preservedScrollTop?: number): void {
       <label class="check" title="${assignmentMode ? `Assign to ${escapeHtml(assignmentMode)}` : "Include when grouping"}"><input type="checkbox" ${assignmentMode ? `data-assign-id="${tab.id}" ${tab.category === assignmentMode ? "checked" : ""}` : `data-id="${tab.id}" ${selected.has(tab.id) ? "checked" : ""}`}><span></span></label>
       <div class="favicon">${tab.favIconUrl ? `<img src="${escapeHtml(tab.favIconUrl)}" alt="">` : hostname(tab.url).slice(0, 1).toUpperCase()}</div>
       <div class="tab-copy"><h3>${escapeHtml(tab.title)}</h3><p>${escapeHtml(hostname(tab.url))}</p></div>
-      <select class="category-select" data-category-id="${tab.id}" aria-label="Category for ${escapeHtml(tab.title)}">
-        ${categories.map((category) => `<option value="${escapeHtml(category)}" ${tab.category === category ? "selected" : ""}>${escapeHtml(category)}</option>`).join("")}
-      </select>
+      <button class="category-select" data-category-trigger="${tab.id}" aria-label="Change category for ${escapeHtml(tab.title)}" aria-haspopup="listbox" aria-expanded="false">
+        <span class="category-label">${escapeHtml(tab.category)}</span>${icon("chevronDown")}
+      </button>
       <div class="action ${tab.duplicateGroup ? "warn" : ""}">${tab.duplicateGroup ? `Duplicate set ${duplicateLabels.get(tab.duplicateGroup)}` : tab.recommendation}</div>
       <button class="trash-button" data-close-tab="${tab.id}" title="Close ${escapeHtml(tab.title)}" aria-label="Close ${escapeHtml(tab.title)}">${icon("trash")}</button>
     </article>`).join("");
@@ -366,23 +366,74 @@ function render(preservedScrollTop?: number): void {
     await chrome.storage.local.set({ categoryOverrides });
     render(scrollTop);
   }));
-  document.querySelectorAll<HTMLSelectElement>("[data-category-id]").forEach((select) => select.addEventListener("change", async () => {
-    const tab = tabs.find((item) => item.id === Number(select.dataset.categoryId));
+  document.querySelectorAll<HTMLButtonElement>("[data-category-trigger]").forEach((trigger) => trigger.addEventListener("click", (event) => {
+    event.stopPropagation();
+    document.querySelector<HTMLElement>(".category-popover")?.remove();
+    document.querySelectorAll<HTMLButtonElement>("[data-category-trigger]").forEach((button) => button.setAttribute("aria-expanded", "false"));
+
+    const tab = tabs.find((item) => item.id === Number(trigger.dataset.categoryTrigger));
     if (!tab) return;
-    tab.category = select.value;
-    tab.recommendation = "Group";
-    categoryOverrides[overrideKey(tab.url)] = select.value;
-    selected.add(tab.id);
-    await chrome.storage.local.set({ categoryOverrides });
-    const row = select.closest(".tab-row");
-    const checkbox = row?.querySelector<HTMLInputElement>("[data-id]");
-    if (checkbox) checkbox.checked = true;
-    const assignmentCheckbox = row?.querySelector<HTMLInputElement>("[data-assign-id]");
-    if (assignmentCheckbox) assignmentCheckbox.checked = tab.category === assignmentMode;
-    const selectedCount = document.querySelector<HTMLElement>("footer div strong");
-    if (selectedCount) selectedCount.textContent = String(assignmentMode ? tabs.filter((item) => item.category === assignmentMode).length : selected.size);
-    const groupButton = document.querySelector<HTMLButtonElement>("#group");
-    if (groupButton) groupButton.disabled = false;
+    trigger.setAttribute("aria-expanded", "true");
+
+    const menu = document.createElement("div");
+    menu.className = "category-popover";
+    menu.setAttribute("role", "listbox");
+    menu.setAttribute("aria-label", `Category for ${tab.title}`);
+    menu.innerHTML = categories.map((category) => `<button role="option" data-category-value="${escapeHtml(category)}" aria-selected="${tab.category === category}" class="${tab.category === category ? "active" : ""}"><span>${escapeHtml(category)}</span>${tab.category === category ? icon("check") : ""}</button>`).join("");
+    document.body.append(menu);
+
+    const rect = trigger.getBoundingClientRect();
+    const left = Math.max(8, Math.min(rect.left, window.innerWidth - menu.offsetWidth - 8));
+    const below = rect.bottom + 4;
+    const top = below + menu.offsetHeight <= window.innerHeight - 8 ? below : Math.max(8, rect.top - menu.offsetHeight - 4);
+    menu.style.left = `${left}px`;
+    menu.style.top = `${top}px`;
+
+    const closeMenu = (): void => {
+      menu.remove();
+      trigger.setAttribute("aria-expanded", "false");
+      document.removeEventListener("pointerdown", handleOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+    const handleOutside = (outsideEvent: PointerEvent): void => {
+      if (!menu.contains(outsideEvent.target as Node) && outsideEvent.target !== trigger) closeMenu();
+    };
+    const handleEscape = (keyEvent: KeyboardEvent): void => {
+      if (keyEvent.key === "Escape") {
+        closeMenu();
+        trigger.focus();
+      }
+    };
+
+    menu.querySelectorAll<HTMLButtonElement>("[data-category-value]").forEach((option) => option.addEventListener("click", async (optionEvent) => {
+      optionEvent.stopPropagation();
+      const category = option.dataset.categoryValue;
+      if (!category) return;
+      tab.category = category;
+      tab.recommendation = "Group";
+      tab.reason = "Assigned by you";
+      categoryOverrides[overrideKey(tab.url)] = category;
+      selected.add(tab.id);
+      await chrome.storage.local.set({ categoryOverrides });
+
+      const label = trigger.querySelector<HTMLElement>(".category-label");
+      if (label) label.textContent = category;
+      const row = trigger.closest(".tab-row");
+      const checkbox = row?.querySelector<HTMLInputElement>("[data-id]");
+      if (checkbox) checkbox.checked = true;
+      const assignmentCheckbox = row?.querySelector<HTMLInputElement>("[data-assign-id]");
+      if (assignmentCheckbox) assignmentCheckbox.checked = tab.category === assignmentMode;
+      const selectedCount = document.querySelector<HTMLElement>("footer div strong");
+      if (selectedCount) selectedCount.textContent = String(assignmentMode ? tabs.filter((item) => item.category === assignmentMode).length : selected.size);
+      const groupButton = document.querySelector<HTMLButtonElement>("#group");
+      if (groupButton) groupButton.disabled = false;
+      closeMenu();
+      trigger.focus();
+    }));
+
+    window.setTimeout(() => document.addEventListener("pointerdown", handleOutside), 0);
+    document.addEventListener("keydown", handleEscape);
+    menu.querySelector<HTMLButtonElement>(".active")?.focus();
   }));
   document.querySelector("#add-category")?.addEventListener("click", () => {
     addingCategory = true;
